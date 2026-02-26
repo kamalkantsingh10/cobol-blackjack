@@ -7,7 +7,7 @@
        WORKING-STORAGE SECTION.
            COPY WS-HANDS.
            COPY WS-DECK.
-           05 WS-X1          PIC 9.
+           77 WS-X1          PIC 9.
        PROCEDURE DIVISION.
        INIT-1.
            MOVE 0 TO WS-X1
