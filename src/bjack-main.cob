@@ -1,0 +1,17 @@
+      * BJACK-MAIN -- MAIN GAME CONTROLLER
+      * WRITTEN 01/85 -- UPDATED 05/90 FOR MULTI-PLAYER MODE
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. BJACK-MAIN.
+       ENVIRONMENT DIVISION.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+           COPY WS-DECK.
+           COPY WS-HANDS.
+           COPY WS-GAME.
+           05 WS-X1          PIC 9.
+       PROCEDURE DIVISION.
+       INIT-1.
+           MOVE 0 TO WS-X1
+           GO TO PROC-A.
+       PROC-A.
+           STOP RUN.

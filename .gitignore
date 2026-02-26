@@ -1,0 +1,10 @@
+# compiled outputs
+*.o
+bjack
+
+# IDE / tooling
+.vscode/
+.claude/
+
+# BMAD framework
+_bmad/
