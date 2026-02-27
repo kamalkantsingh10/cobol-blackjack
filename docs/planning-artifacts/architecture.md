@@ -10,6 +10,10 @@ date: '2026-02-26'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-02-26'
+lastUpdated: '2026-02-27'
+updateHistory:
+  - date: '2026-02-27'
+    changes: 'Added betting system, natural blackjack, double down, 3 new deliberate defects, updated FR mapping from 32 to 46 FRs'
 ---
 
 # Architecture Decision Document
@@ -20,33 +24,44 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (32 total):**
+**Functional Requirements (46 total):**
 
-- **Game Engine (FR1–FR7):** Standard Blackjack loop — shuffle, deal, hit/stand, dealer
-  turn, Ace valuation, outcome display, play-again. All standard casino rules except
-  where deliberately violated by the 6 specified bugs.
+- **Game Engine (FR1–FR7):** Standard Blackjack loop — shuffle, deal, hit/stand/double-down,
+  dealer turn, Ace valuation, outcome display, play-again. All standard casino rules except
+  where deliberately violated by the 9 specified bugs.
+- **Betting System (FR33–FR39):** 100 starting chips, bet placement (min 1, max balance),
+  natural blackjack detection (Ace + 10-value on initial deal, pays 3:2), double down
+  (double bet, one card, auto-stand), payout calculation (1:1 win, 3:2 natural, push
+  returns bet, loss forfeits), chip balance persistence across rounds, session ends at
+  zero chips or player quit.
 - **Build & Deployment (FR8–FR11):** Single `build.sh` command compiles and launches on
   GnuCOBOL 3.1+/Ubuntu. Launch-to-first-prompt under 5 seconds. No manual steps.
-- **Terminal Display (FR12–FR16):** ASCII card rendering in 80-column terminal.
-  Simultaneous player/dealer hand display. Period-accurate prompts. No color dependency.
+- **Terminal Display (FR12–FR16, FR40–FR42):** ASCII card rendering with Unicode suit
+  symbols in 80-column terminal. ANSI color (red/white suits, yellow borders).
+  Simultaneous player/dealer hand display. Chip balance and current bet display.
+  Bet prompt with min/max constraints. Period-accurate action prompts (H/S/D).
 - **Legacy Code Authenticity (FR17–FR20):** Every source file carries identifiable
-  1980s-era anti-patterns. 4+ pointable examples demonstrable without COBOL expertise.
+  1980s-era anti-patterns. 6+ pointable examples demonstrable without COBOL expertise.
   Project structure and naming reflect 1980s mainframe development practices.
-- **Deliberate Defects (FR21–FR27):** 6 specific bugs with module assignments:
+- **Deliberate Defects (FR21–FR26, FR43–FR46):** 9 specific bugs with module assignments:
   biased shuffle (BJACK-DECK), soft 17 violation (BJACK-DEALER), Ace recalculation
   failure (BJACK-SCORE), no input validation (BJACK-MAIN), off-by-one in deal array
-  (BJACK-DEAL), dead code paragraph (BJACK-DECK). Each independently verifiable.
+  (BJACK-DEAL), dead code paragraph (BJACK-DECK), payout rounding error on 3:2 natural
+  blackjack (BJACK-MAIN), double-down-anytime rule violation (BJACK-MAIN), bet-over-balance
+  from stale variable (BJACK-MAIN). Each independently verifiable.
 - **Middleware Stubs (FR28–FR30):** CASINO-AUDIT-LOG (accepts params, no-op) and
   LEGACY-RANDOM-GEN (returns hardcoded value). Both compile and link cleanly.
-- **Documentation (FR31–FR32):** README with compile/run instructions and known bugs list.
+- **Documentation (FR31–FR32):** README with compile/run instructions and 9 known bugs list.
 
 **Non-Functional Requirements:**
 
 - **Performance:** <5 second launch; immediate render on each player action; play-again
   loop requires no recompilation.
-- **Reliability:** Full game round (deal through play-again) completes without abnormal
-  termination on normal input (H/S). Undefined behavior on unexpected input is a
-  specified defect (FR24), not a reliability gap.
+- **Reliability:** Full game round (bet through play-again) completes without abnormal
+  termination on normal input (numeric bet, H/S/D). FR24 (no input validation),
+  FR44 (double-down-anytime), and FR45 (bet-over-balance) define the boundary —
+  undefined behavior on unexpected input and rule violations are specified defects,
+  not reliability gaps.
 - **Compatibility:** GnuCOBOL 3.1+, Ubuntu 20.04+, any standard 80-column terminal
   emulator (gnome-terminal, xterm, tmux). No macOS requirement.
 - **Intentional Un-maintainability:** Codebase must score "unmaintainable" against any
@@ -72,9 +87,12 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 - **Tech debt distribution:** Anti-patterns must appear in every source file — no file
   is clean. This is an architectural constraint on all module decisions.
-- **Bug-reliability tension:** Game must run cleanly on normal input while 6 bugs are
+- **Bug-reliability tension:** Game must run cleanly on normal input while 9 bugs are
   present and independently verifiable. Each bug must be subtle enough to be invisible
   during casual play.
+- **Business logic entanglement:** Betting and payout logic must be demonstrably tangled
+  with game flow — not cleanly separated into its own module. This is the key demo
+  moment: business rules trapped in spaghetti code.
 - **Build reproducibility:** Compilation order and COPY dependencies must be stable
   across fresh Ubuntu installs. Build script is a deliverable, not a convenience.
 - **Terminal authenticity:** Visual output must read as 1980s mainframe to a non-
@@ -169,7 +187,7 @@ directory structure, empty source file stubs, and the initial `build.sh` framewo
 - `copy/WS-HANDS.cpy` — Player hand array, dealer hand array, card count per
   hand (max cards per hand)
 - `copy/WS-GAME.cpy` — Game state flags, round outcome code, play-again flag,
-  running score totals
+  running score totals, chip balance (WS-BAL), current bet amount (WS-BET)
 
 **Rationale:** Functional split mirrors how real mainframe shops organized
 separate "copy libraries" owned by different teams. Each copybook is an
@@ -199,10 +217,22 @@ with `-I copy/` include path.
 
 **BJACK-DISPL — Dedicated Display Module:**
 - All ASCII card rendering and game state display consolidated in `src/bjack-displ.cob`
-- Called from BJACK-MAIN via `CALL 'BJACK-DISPL' USING BY REFERENCE ...`
-- Receives hand data and display-mode flags; outputs via DISPLAY statements
+- Called from BJACK-MAIN via `CALL 'BJACK-DISPL' USING BY REFERENCE WS-HND WS-GM`
+- Receives hand data and game state (including chip balance WS-BAL and bet WS-BET
+  via WS-GM); outputs via DISPLAY statements with ANSI escape codes
+- Renders: screen clear, yellow-bordered header, dealer hand with colored suit symbols,
+  player hand with colored suit symbols, hand totals, chip balance, current bet,
+  round outcome messages (player win / dealer win / push)
+- Unicode suit symbols: Hearts (X"E299A5"), Diamonds (X"E299A6"),
+  Clubs (X"E299A3"), Spades (X"E299A0") — 3-byte UTF-8 in PIC X(3)
+- ANSI colors: red (hearts/diamonds), white (clubs/spades), yellow (borders/titles)
 - Internally: its own share of cryptic naming, hardcoded column positions,
   GOTO-driven rendering logic, and incorrect comments
+
+**Betting Display Integration:**
+- Chip balance and bet amount are fields in WS-GAME.cpy (WS-BAL, WS-BET)
+- BJACK-DISPL already receives WS-GM — no interface change needed
+- Bet prompt and bet input live in BJACK-MAIN (ACCEPT), not BJACK-DISPL
 
 ---
 
@@ -311,9 +341,9 @@ Rule: COPY statements appear in the WORKING-STORAGE SECTION of the DATA DIVISION
 Each module copies only what it needs:
 - BJACK-DECK: COPY WS-DECK
 - BJACK-DEAL: COPY WS-DECK, COPY WS-HANDS
-- BJACK-DEALER: COPY WS-HANDS, COPY WS-GAME
+- BJACK-DEALER: COPY WS-DECK, COPY WS-HANDS, COPY WS-GAME
 - BJACK-SCORE: COPY WS-HANDS, COPY WS-GAME
-- BJACK-DISPL: COPY WS-HANDS, COPY WS-DECK
+- BJACK-DISPL: COPY WS-HANDS, COPY WS-GAME
 - BJACK-MAIN: COPY WS-DECK, COPY WS-HANDS, COPY WS-GAME (all three)
 - Middleware stubs: no COPY statements needed
 
@@ -412,7 +442,7 @@ Anti-pattern: Accurate, helpful inline comments explaining what the code does.
 
 **Bug Implementation Rules:**
 
-Rule: Each of the 6 bugs must satisfy two constraints simultaneously:
+Rule: Each of the 9 bugs must satisfy two constraints simultaneously:
 1. The game completes a full round without ABEND under normal input (H or S)
 2. The bug is independently verifiable through targeted testing
 
@@ -450,18 +480,18 @@ cobol-blackjack/
 ├── build.sh                   ← compile + link + launch (FR8–FR11)
 ├── README                     ← compile/run instructions + known bugs (FR31–FR32)
 ├── src/
-│   ├── bjack-main.cob         ← game loop orchestrator (FR3, FR6, FR7, FR24)
+│   ├── bjack-main.cob         ← game loop + betting orchestrator (FR3, FR6, FR7, FR24, FR33–FR39, FR42, FR43–FR45)
 │   ├── bjack-deck.cob         ← deck init + shuffle (FR1, FR21, FR26)
 │   ├── bjack-deal.cob         ← initial deal logic (FR2, FR25)
 │   ├── bjack-dealer.cob       ← dealer turn logic (FR4, FR22)
 │   ├── bjack-score.cob        ← hand value calculation (FR5, FR23)
-│   ├── bjack-displ.cob        ← all terminal rendering (FR12–FR16, FR20)
+│   ├── bjack-displ.cob        ← all terminal rendering (FR12–FR16, FR20, FR40–FR41)
 │   ├── casino-audit-log.cob   ← middleware stub, no-op (FR28, FR30)
 │   └── legacy-random-gen.cob  ← middleware stub, hardcoded return (FR29, FR30)
 └── copy/
     ├── WS-DECK.cpy            ← card structure, 52-element deck array, deck index
     ├── WS-HANDS.cpy           ← player/dealer hand arrays, card counts per hand
-    └── WS-GAME.cpy            ← game state flags, round outcome, play-again flag
+    └── WS-GAME.cpy            ← game state flags, outcome, play-again, chip balance, bet
 ```
 
 ### Architectural Boundaries
@@ -472,11 +502,15 @@ All cross-module coordination routes through BJACK-MAIN.
 
 ```
 BJACK-MAIN
+  ├── ACCEPT WS-BET              ← bet placement (FR34, FR42, FR45 stale check)
   ├── CALL 'BJACK-DECK'          ← deck init and shuffle
   ├── CALL 'BJACK-DEAL'          ← deal initial hands
-  ├── CALL 'BJACK-DISPL'         ← render game state
   ├── CALL 'BJACK-SCORE'         ← calculate hand values
+  ├── [natural blackjack check]  ← FR35 detection, FR43 payout truncation
+  ├── CALL 'BJACK-DISPL'         ← render game state + chips + bet
+  ├── ACCEPT WS-FLG-A            ← H/S/D prompt (FR24, FR44 double-down-anytime)
   ├── CALL 'BJACK-DEALER'        ← run dealer turn
+  ├── [payout calculation]       ← FR37 1:1/3:2/push, FR43 truncation
   ├── CALL 'CASINO-AUDIT-LOG'    ← audit stub (no-op)
   └── BJACK-DECK
         └── CALL 'LEGACY-RANDOM-GEN'  ← random stub (hardcoded value)
@@ -489,7 +523,8 @@ via BY REFERENCE parameters backed by the copybook structures.
 
 **I/O Boundary:**
 - All DISPLAY output routes through BJACK-DISPL (display module)
-- All ACCEPT input (player hit/stand prompt) lives in BJACK-MAIN only
+- All ACCEPT input (bet prompt, hit/stand/double-down prompt, play-again prompt)
+  lives in BJACK-MAIN only
 - No other module uses ACCEPT
 
 **Build Boundary:**
@@ -504,34 +539,52 @@ isolation runs compile individual modules with test harnesses outside build.sh.
 **Game Engine (FR1–FR7):**
 - FR1 shuffle/deal from deck → bjack-deck.cob
 - FR2 initial two-card deal → bjack-deal.cob
-- FR3 hit/stand player choice → bjack-main.cob (ACCEPT + CALL orchestration)
+- FR3 hit/stand/double-down player choice → bjack-main.cob (ACCEPT + CALL orchestration)
 - FR4 dealer turn logic → bjack-dealer.cob
 - FR5 hand value + Ace calculation → bjack-score.cob
 - FR6 round outcome determination → bjack-main.cob (reads WS-GAME result)
-- FR7 play-again loop → bjack-main.cob (WS-GAME play-again flag)
+- FR7 play-again loop → bjack-main.cob (session continues with chip balance)
+
+**Betting System (FR33–FR39):**
+- FR33 100 starting chips → bjack-main.cob (INIT-1 sets WS-BAL = 100)
+- FR34 bet placement (min 1, max balance) → bjack-main.cob (bet prompt + ACCEPT)
+- FR35 natural blackjack detection → bjack-main.cob (check after initial deal)
+- FR36 double down → bjack-main.cob (action prompt, double WS-BET, deal one card)
+- FR37 payout calculation → bjack-main.cob (after outcome in PROC-C/CALC-2 area)
+- FR38 chip balance persistence → WS-GAME.cpy WS-BAL field, persists across rounds
+- FR39 session end at zero chips → bjack-main.cob (CHECK-X area)
 
 **Build & Deployment (FR8–FR11):**
 - FR8–FR11 single-command compile + launch → build.sh
 
-**Terminal Display (FR12–FR16, FR20):**
-- FR12 ASCII card display → bjack-displ.cob
+**Terminal Display (FR12–FR16, FR20, FR40–FR42):**
+- FR12 ASCII card display with Unicode suits → bjack-displ.cob
 - FR13 simultaneous player/dealer hands → bjack-displ.cob
 - FR14 current hand values display → bjack-displ.cob
 - FR15 round outcome messages → bjack-displ.cob
-- FR16 period-accurate hit/stand prompt → bjack-main.cob
+- FR16 period-accurate H/S/D prompt → bjack-main.cob
 - FR20 terminal reads as 1980s mainframe → bjack-displ.cob + bjack-main.cob
+- FR40 chip balance display → bjack-displ.cob (reads WS-BAL from WS-GM)
+- FR41 current bet display → bjack-displ.cob (reads WS-BET from WS-GM)
+- FR42 bet prompt with min/max → bjack-main.cob (DISPLAY + ACCEPT before deal)
 
 **Legacy Code Authenticity (FR17–FR19):**
 - Cross-cutting — enforced in every .cob and .cpy file per implementation patterns
 
-**Deliberate Defects (FR21–FR27):**
+**Deliberate Defects (FR21–FR26, FR43–FR46):**
 - FR21 biased shuffle → bjack-deck.cob (shuffle paragraph)
 - FR22 soft 17 violation → bjack-dealer.cob (dealer hit/stand decision paragraph)
 - FR23 Ace recalculation failure → bjack-score.cob (Ace adjust paragraph)
 - FR24 no input validation → bjack-main.cob (hit/stand ACCEPT paragraph)
 - FR25 off-by-one in deal array → bjack-deal.cob (deal loop paragraph)
 - FR26 dead code paragraph → bjack-deck.cob (unreachable paragraph, never PERFORMed)
-- FR27 independent verifiability → each bug module can be compiled and tested in isolation
+- FR43 payout rounding error → bjack-main.cob (3:2 natural blackjack payout uses
+  integer division, truncating fractional chips — e.g., bet 5 pays 7 not 7.5)
+- FR44 double-down-anytime → bjack-main.cob (action prompt accepts 'D' regardless
+  of how many cards player has — should only allow on initial two-card hand)
+- FR45 bet-over-balance → bjack-main.cob (bet validation checks stale balance
+  variable, allowing wager exceeding current chips under specific sequence)
+- FR46 all 9 bugs independently verifiable → each bug module testable in isolation
 
 **Middleware Stubs (FR28–FR30):**
 - FR28 CASINO-AUDIT-LOG → casino-audit-log.cob (LINKAGE SECTION, PROCEDURE does nothing)
@@ -540,7 +593,7 @@ isolation runs compile individual modules with test harnesses outside build.sh.
 
 **Documentation (FR31–FR32):**
 - FR31 compile/run instructions → README
-- FR32 known bugs list → README
+- FR32 known bugs list (9 bugs) → README
 
 ---
 
@@ -548,17 +601,24 @@ isolation runs compile individual modules with test harnesses outside build.sh.
 
 **Internal Data Flow (one game round):**
 1. build.sh: `cobc -c -I copy/` each src/*.cob → link → launch bjack
-2. bjack starts → BJACK-MAIN: CALL BJACK-DECK (init + shuffle deck in WS-DECK)
-3. BJACK-MAIN: CALL BJACK-DEAL (populate WS-HANDS with initial 4 cards)
-4. BJACK-MAIN: CALL BJACK-SCORE (calculate initial values into WS-GAME)
-5. BJACK-MAIN: CALL BJACK-DISPL (render both hands)
-6. BJACK-MAIN: ACCEPT WS-FLG-A (player hit/stand — no validation per FR24)
-7. Loop: CALL BJACK-DEAL (hit) → CALL BJACK-SCORE → CALL BJACK-DISPL → repeat
-8. BJACK-MAIN: CALL BJACK-DEALER (dealer turn — reads/writes WS-HANDS, WS-GAME)
-9. BJACK-MAIN: CALL BJACK-DISPL (show final state + outcome)
-10. BJACK-MAIN: CALL CASINO-AUDIT-LOG (no-op)
-11. BJACK-MAIN: ACCEPT WS-FLG-B (play again? — no validation)
-12. Loop back to step 3 or STOP RUN
+2. bjack starts → BJACK-MAIN INIT-1: set WS-BAL = 100 (starting chips)
+3. BJACK-MAIN: CALL BJACK-DECK (init + shuffle deck in WS-DECK)
+4. BJACK-MAIN: DISPLAY bet prompt, ACCEPT WS-BET (bet placement — FR34, FR45 stale check)
+5. BJACK-MAIN: CALL BJACK-DEAL (populate WS-HANDS with initial 4 cards)
+6. BJACK-MAIN: CALL BJACK-SCORE (calculate initial values into WS-GAME)
+7. BJACK-MAIN: Check for natural blackjack (FR35 — Ace + 10-value on initial deal)
+   - If natural: resolve immediately, payout 3:2 (FR43 truncation bug), skip to step 12
+8. BJACK-MAIN: CALL BJACK-DISPL (render hands, chip balance, current bet)
+9. BJACK-MAIN: ACCEPT WS-FLG-A (H=hit, S=stand, D=double-down — no validation FR24)
+   - If D: double WS-BET, deal one card, auto-stand (FR36, FR44 allows anytime)
+10. Loop: CALL BJACK-DEAL (hit) → CALL BJACK-SCORE → CALL BJACK-DISPL → repeat
+11. BJACK-MAIN: CALL BJACK-DEALER (dealer turn — reads/writes WS-HANDS, WS-GAME)
+12. BJACK-MAIN: Determine outcome (PROC-C), calculate payout (FR37), update WS-BAL
+13. BJACK-MAIN: CALL BJACK-DISPL (show final state + outcome + updated balance)
+14. BJACK-MAIN: CALL CASINO-AUDIT-LOG (no-op)
+15. BJACK-MAIN: Check WS-BAL = 0 → "YOU ARE BROKE" → STOP RUN (FR39)
+16. BJACK-MAIN: ACCEPT WS-FLG-B (play again? — no validation)
+17. Loop back to step 3 (shuffle) or STOP RUN — WS-BAL persists (FR38)
 
 **BJACK-DECK internal call:**
 BJACK-DECK: CALL LEGACY-RANDOM-GEN to get "random" number (returns hardcoded
@@ -613,7 +673,7 @@ domains. Build process is explicit and sequenced with no ambiguity.
 
 ### Requirements Coverage Validation ✅
 
-**Functional Requirements:** All 32 FRs mapped to specific modules.
+**Functional Requirements:** All 46 FRs mapped to specific modules.
 See Requirements to Structure Mapping in Project Structure section.
 
 **Non-Functional Requirements:**
@@ -656,7 +716,7 @@ Story 1 is complete and its copybook field names are documented.
 - [x] Project context thoroughly analyzed
 - [x] Scale and complexity assessed (Low — 8 modules, 3 copybooks, 1 build script)
 - [x] Technical constraints identified (GnuCOBOL, Ubuntu, 80-column, COBOL 74-era)
-- [x] Cross-cutting concerns mapped (tech debt distribution, bug-reliability tension)
+- [x] Cross-cutting concerns mapped (tech debt distribution, bug-reliability tension, business logic entanglement)
 
 **✅ Architectural Decisions**
 - [x] Runtime and toolchain fully specified (GnuCOBOL 3.2, cobc, build.sh)
@@ -674,7 +734,7 @@ Story 1 is complete and its copybook field names are documented.
 - [x] Complete directory structure defined (src/, copy/, root files)
 - [x] Component boundaries established (orchestrator + leaf model)
 - [x] Integration points mapped (data flow through one game round)
-- [x] All 32 FRs mapped to specific files
+- [x] All 46 FRs mapped to specific files
 
 ### Architecture Readiness Assessment
 

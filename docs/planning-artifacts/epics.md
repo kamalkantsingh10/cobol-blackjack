@@ -1,6 +1,10 @@
 ---
 stepsCompleted: [step-01-validate-prerequisites, step-02-design-epics, step-03-create-stories, step-04-final-validation]
 workflowStatus: complete
+lastUpdated: '2026-02-27'
+updateHistory:
+  - date: '2026-02-27'
+    changes: 'Added Epic 5 (Betting System), 3 new bug stories in Epic 3, updated FR/NFR inventory for 46 FRs'
 inputDocuments:
   - docs/planning-artifacts/prd.md
   - docs/planning-artifacts/architecture.md
@@ -18,7 +22,7 @@ This document provides the complete epic and story breakdown for cobol-blackjack
 
 FR1: The system can shuffle and deal from a standard 52-card deck
 FR2: The system can deal an initial two-card hand to the player and the dealer
-FR3: The player can choose to hit (receive an additional card) or stand (end their turn)
+FR3: The player can choose to hit (receive an additional card), stand (end their turn), or double down (on initial two-card hand only)
 FR4: The system can execute the dealer turn according to standard casino rules
 FR5: The system can calculate hand values with Ace counted as 1 or 11
 FR6: The system can determine and display the round outcome (player win, dealer win, push)
@@ -27,13 +31,13 @@ FR8: Kamal can compile all source files with a single command on GnuCOBOL 3.1+/U
 FR9: Kamal can launch the game immediately after compilation via the same single command
 FR10: The build process completes and the game reaches first player prompt within 5 seconds of command entry
 FR11: The build script runs without modification on a fresh Ubuntu installation with GnuCOBOL 3.1+ installed
-FR12: The system can display playing cards as ASCII representations in an 80-column terminal
+FR12: The system can display playing cards as ASCII card boxes with Unicode suit symbols in an 80-column terminal
 FR13: The system can display both player and dealer hands simultaneously during a round
 FR14: The system can display current hand values for player and dealer
 FR15: The system can display round outcome messages legible to a non-COBOL audience
-FR16: The system can prompt the player for hit/stand input in a manner consistent with 1980s terminal conventions
+FR16: The system can prompt the player for hit/stand/double-down input in a manner consistent with 1980s terminal conventions
 FR17: Each source file contains identifiable examples of 1980s-era code style (cryptic naming, GOTO statements, dead code, sparse/incorrect comments)
-FR18: The codebase contains a minimum of 4 distinct, pointable examples of messiness demonstrable during a live demo without COBOL expertise
+FR18: The codebase contains a minimum of 6 distinct, pointable examples of messiness demonstrable during a live demo without COBOL expertise
 FR19: The overall project structure, file naming, and build process reflect 1980s mainframe development anti-patterns
 FR20: The running terminal output visually reads as an authentic 1980s mainframe application to a non-technical observer
 FR21: The deck management module contains a biased shuffle algorithm
@@ -42,19 +46,32 @@ FR23: The scoring module contains an Ace value recalculation failure when two Ac
 FR24: The main game module contains no input validation on the hit/stand prompt
 FR25: The deal module contains an off-by-one error in the deal array
 FR26: The deck module contains a dead code paragraph that is never called
-FR27: Each of the 6 deliberate bugs is independently verifiable through targeted testing without running the full game
 FR28: The system calls a CASINO-AUDIT-LOG stub that accepts parameters and performs no operation
 FR29: The system calls a LEGACY-RANDOM-GEN stub that returns a hardcoded value
 FR30: Both middleware stubs compile and link without errors as part of the standard build
 FR31: Kamal can read a README that provides step-by-step compile and run instructions
-FR32: Kamal can read a README that lists and describes all 6 known bugs with enough detail to locate them in the code
+FR32: Kamal can read a README that lists and describes all 9 known bugs with enough detail to locate them in the code
+FR33: The player starts each session with a chip balance of 100
+FR34: The player can place a bet (minimum 1 chip, maximum equal to current balance) before each round
+FR35: The system detects a natural blackjack (Ace + 10-value card on initial two-card deal) and resolves the round immediately
+FR36: The player can double down: bet is doubled, player receives exactly one additional card, then auto-stands
+FR37: The system calculates payouts after each round: win pays 1:1, natural blackjack pays 3:2, push returns the bet, loss forfeits the bet
+FR38: The chip balance persists across rounds within a session
+FR39: The session ends when the chip balance reaches zero (player is broke) or the player chooses to quit
+FR40: The system can display the player's current chip balance during gameplay
+FR41: The system can display the current bet amount during a round
+FR42: The system can prompt the player to enter a bet amount before each round, displaying min/max constraints
+FR43: The betting module contains a payout rounding error: natural blackjack 3:2 payout is calculated using integer division, truncating fractional chips
+FR44: The game module allows double down after the player has already hit (rule violation — double down should only be available on initial two-card hand)
+FR45: The betting module allows the player to bet more chips than their current balance under a specific sequence (bet validation checks stale balance variable)
+FR46: Each of the 9 deliberate bugs is independently verifiable through targeted testing without running the full game
 
 ### NonFunctional Requirements
 
 NFR1: Application reaches first player prompt within 5 seconds of single launch command on standard Ubuntu machine
 NFR2: Card display and game state render immediately upon each player action — no perceptible delay between input and output
 NFR3: Play-again loop restarts a new round without recompilation or perceptible lag
-NFR4: Game completes a full round without abnormal termination under any normal input (H, S, or equivalent)
+NFR4: Game completes a full round (bet through play-again prompt) without abnormal termination under any normal input (numeric bet, H, S, D). FR24, FR44, and FR45 define the defect boundary
 NFR5: Application produces consistent, repeatable behavior across multiple consecutive runs on the same machine
 NFR6: All source files compile without errors or warnings on GnuCOBOL 3.1+ on Ubuntu 20.04 or later
 NFR7: Terminal display renders correctly in any standard 80-column terminal emulator (gnome-terminal, xterm, tmux) without special configuration
@@ -66,6 +83,9 @@ NFR10: Any code analysis tool surfaces multiple, distinct quality issues on firs
 
 - No starter template exists for COBOL — manual project scaffolding required. First story creates directory structure and empty source file stubs
 - Complete 14-file project structure: 8 .cob source files + 3 .cpy copybooks + build.sh + README
+- Betting logic lives in BJACK-MAIN (orchestrator owns game flow, betting IS game flow — no separate betting module)
+- WS-GAME.cpy extended with chip balance (WS-BAL) and bet amount (WS-BET) fields
+- Business logic entanglement is a key demo requirement: betting/payout logic must be demonstrably tangled with game flow, not cleanly separated
 - Directory structure: src/ (8 .cob files) + copy/ (3 .cpy files) at project root
 - All modules use COBOL 74-era style: no EVALUATE, GOTO-driven flow, flat paragraph structure, nested IF trees
 - Calling convention: BY REFERENCE on every CALL, zero return code checks after any CALL
@@ -79,7 +99,7 @@ NFR10: Any code analysis tool surfaces multiple, distinct quality issues on firs
 
 FR1: Epic 2 — Shuffle and deal from 52-card deck (BJACK-DECK)
 FR2: Epic 2 — Initial two-card deal (BJACK-DEAL)
-FR3: Epic 2 — Hit/stand player choice (BJACK-MAIN)
+FR3: Epic 2+5 — Hit/stand/double-down player choice (BJACK-MAIN)
 FR4: Epic 2 — Dealer turn logic (BJACK-DEALER)
 FR5: Epic 2 — Hand value + Ace calculation (BJACK-SCORE)
 FR6: Epic 2 — Round outcome determination (BJACK-MAIN)
@@ -94,7 +114,7 @@ FR14: Epic 2 — Current hand values display (BJACK-DISPL)
 FR15: Epic 2 — Round outcome messages (BJACK-DISPL)
 FR16: Epic 2 — Period-accurate hit/stand prompt (BJACK-MAIN)
 FR17: Epic 1+2 — 1980s code style in every source file (all modules)
-FR18: Epic 2 — 4+ pointable messiness examples demonstrable without COBOL expertise
+FR18: Epic 2 — 6+ pointable messiness examples demonstrable without COBOL expertise
 FR19: Epic 1 — Project structure and naming reflects 1980s mainframe anti-patterns
 FR20: Epic 2 — Terminal reads as authentic 1980s mainframe to non-technical observer
 FR21: Epic 3 — Biased shuffle algorithm (BJACK-DECK)
@@ -103,12 +123,25 @@ FR23: Epic 3 — Ace recalculation failure when two Aces held (BJACK-SCORE)
 FR24: Epic 3 — No input validation on hit/stand prompt (BJACK-MAIN)
 FR25: Epic 3 — Off-by-one error in deal array (BJACK-DEAL)
 FR26: Epic 3 — Dead code paragraph never called (BJACK-DECK)
-FR27: Epic 3 — All 6 bugs independently verifiable through targeted testing
 FR28: Epic 1 — CASINO-AUDIT-LOG stub accepts parameters, performs no operation
 FR29: Epic 1 — LEGACY-RANDOM-GEN stub returns hardcoded value
 FR30: Epic 1 — Both middleware stubs compile and link without errors
 FR31: Epic 4 — README with step-by-step compile and run instructions
-FR32: Epic 4 — README lists and describes all 6 known bugs with location detail
+FR32: Epic 4 — README lists and describes all 9 known bugs with location detail
+FR33: Epic 5 — Player starts with 100 chips (BJACK-MAIN)
+FR34: Epic 5 — Bet placement min 1, max balance (BJACK-MAIN)
+FR35: Epic 5 — Natural blackjack detection and immediate resolution (BJACK-MAIN)
+FR36: Epic 5 — Double down: double bet, one card, auto-stand (BJACK-MAIN)
+FR37: Epic 5 — Payout calculation 1:1/3:2/push (BJACK-MAIN)
+FR38: Epic 5 — Chip balance persists across rounds (WS-GAME.cpy)
+FR39: Epic 5 — Session ends at zero chips or player quit (BJACK-MAIN)
+FR40: Epic 5 — Display chip balance during gameplay (BJACK-DISPL)
+FR41: Epic 5 — Display current bet during round (BJACK-DISPL)
+FR42: Epic 5 — Bet prompt with min/max constraints (BJACK-MAIN)
+FR43: Epic 3 — Payout rounding error on 3:2 natural blackjack (BJACK-MAIN)
+FR44: Epic 3 — Double-down-anytime rule violation (BJACK-MAIN)
+FR45: Epic 3 — Bet-over-balance from stale variable (BJACK-MAIN)
+FR46: Epic 3 — All 9 bugs independently verifiable through targeted testing
 
 ## Epic List
 
@@ -120,13 +153,21 @@ Kamal has a compilable project skeleton — the full directory structure is in p
 Kamal can run `./build.sh` and play a complete round of Blackjack — deal, hit/stand, dealer turn, outcome, play-again — in an 80-column terminal that reads as authentic 1980s mainframe, with legacy code style throughout every module.
 **FRs covered:** FR1–FR18, FR20
 
-### Epic 3: Deliberate Defects
-All 6 deliberate bugs are embedded in their specified modules, each independently verifiable through targeted testing, and the game continues to complete normally on valid input (H or S).
-**FRs covered:** FR21–FR27
+### Epic 3: Deliberate Defects (Original 6)
+All 6 original deliberate bugs are embedded in their specified modules, each independently verifiable through targeted testing, and the game continues to complete normally on valid input (H, S, or D).
+**FRs covered:** FR21–FR26, FR46 (partial)
 
 ### Epic 4: Demo Documentation
-Kamal has a README with step-by-step compile/run instructions and a known bugs list describing all 6 bugs with enough detail to locate them in the code without COBOL expertise.
+Kamal has a README with step-by-step compile/run instructions and a known bugs list describing all 9 bugs with enough detail to locate them in the code without COBOL expertise.
 **FRs covered:** FR31, FR32
+
+### Epic 5: Betting System with Business Logic
+Kamal can place bets, see chip balances, double down, get natural blackjack payouts, and watch business logic (payout calculations, bet validation) tangled in spaghetti code — the key demo moment showing business rules trapped in unmaintainable legacy code.
+**FRs covered:** FR33–FR42
+
+### Epic 6: Betting Deliberate Defects
+3 additional deliberate bugs targeting the betting system are embedded in BJACK-MAIN, each independently verifiable, and the game continues to complete normally on valid input.
+**FRs covered:** FR43–FR46
 
 ---
 
@@ -284,9 +325,9 @@ So that I can run a complete Blackjack round — deal, hit/stand, dealer turn, o
 
 ---
 
-## Epic 3: Deliberate Defects
+## Epic 3: Deliberate Defects (Original 6)
 
-All 6 deliberate bugs are embedded in their specified modules, each independently verifiable through targeted testing, and the game continues to complete normally on valid input (H or S).
+All 6 original deliberate bugs are embedded in their specified modules, each independently verifiable through targeted testing, and the game continues to complete normally on valid input (H, S, or D).
 
 ### Story 3.1: Biased Shuffle and Dead Code (bjack-deck.cob)
 
@@ -372,20 +413,165 @@ So that unexpected input produces undefined, demonstrable behavior — a specifi
 
 ## Epic 4: Demo Documentation
 
-Kamal has a README with step-by-step compile/run instructions and a known bugs list describing all 6 bugs with enough detail to locate them in the code without COBOL expertise.
+Kamal has a README with step-by-step compile/run instructions and a known bugs list describing all 9 bugs with enough detail to locate them in the code without COBOL expertise.
 
 ### Story 4.1: README — Launch Instructions and Known Bugs List
 
 As a demo presenter (Kamal),
 I want a README at the project root with step-by-step compile/run instructions and a complete known bugs list,
-So that I can set up the demo on any fresh machine and know exactly which code locations to highlight for each of the 6 deliberate defects.
+So that I can set up the demo on any fresh machine and know exactly which code locations to highlight for each of the 9 deliberate defects.
 
 **Acceptance Criteria:**
 
-**Given** the completed application from Epics 1–3
+**Given** the completed application from Epics 1–3 and 5–6
 **When** Kamal reads the README
 **Then** the compile/run section provides step-by-step instructions sufficient to get from a fresh Ubuntu install with GnuCOBOL 3.1+ to a running game — no assumed knowledge
-**And** the known bugs section lists all 6 bugs with: the bug name, the module/file it lives in, the paragraph or line where it appears, and a plain-English description of what it does wrong
+**And** the known bugs section lists all 9 bugs with: the bug name, the module/file it lives in, the paragraph or line where it appears, and a plain-English description of what it does wrong
 **And** each bug entry contains enough detail for Kamal to locate it in the code during a live demo without searching
 **And** the README itself follows 1980s mainframe conventions — plain text format, no markdown rendering, terse style, no decorative formatting
 **And** the README does NOT accurately describe all code behavior — at least one statement should be outdated or incorrect (consistent with the project's authenticity requirements)
+
+---
+
+## Epic 5: Betting System with Business Logic
+
+Kamal can place bets, see chip balances, double down, get natural blackjack payouts, and watch business logic (payout calculations, bet validation) tangled in spaghetti code — the key demo moment showing business rules trapped in unmaintainable legacy code.
+
+### Story 5.1: Copybook Extension and Chip Balance Initialization
+
+As a developer,
+I want WS-GAME.cpy extended with chip balance and bet amount fields, and BJACK-MAIN updated to initialize and manage chip state,
+So that the betting data contract is established for all modules and the player starts each session with 100 chips.
+
+**Acceptance Criteria:**
+
+**Given** the existing WS-GAME.cpy copybook and working game from Epic 2
+**When** WS-GAME.cpy is inspected
+**Then** it contains a chip balance field (WS-BAL, PIC 9(4) or similar) and a bet amount field (WS-BET, PIC 9(4) or similar) with cryptic field names
+**And** BJACK-MAIN initializes WS-BAL to 100 at session start (not per-round — balance persists)
+**And** WS-BAL persists across rounds without reset
+**And** the session ends with a "YOU ARE BROKE" message when WS-BAL reaches zero (FR39)
+**And** all modules still compile and link without errors after the copybook change
+**And** the game still completes a full round without abnormal termination
+
+### Story 5.2: Bet Placement and Validation
+
+As a demo presenter (Kamal),
+I want to place a bet before each round with min/max constraints displayed,
+So that the game has a visible betting mechanic that decision-makers recognize as business logic.
+
+**Acceptance Criteria:**
+
+**Given** the player has a chip balance > 0
+**When** a new round begins
+**Then** BJACK-MAIN displays a bet prompt showing current balance and min/max constraints (min 1, max = current balance)
+**And** the player enters a numeric bet amount via ACCEPT
+**And** the bet is stored in WS-BET and deducted or tracked for the round
+**And** the prompt style is consistent with 1980s terminal conventions (e.g., "ENTER BET (1-nnn):")
+**And** BJACK-DISPL shows the current bet amount during the round (FR41)
+**And** BJACK-DISPL shows the current chip balance during gameplay (FR40)
+**And** the module contains GOTO-driven flow, cryptic variable names, and at least one wrong comment
+
+### Story 5.3: Natural Blackjack Detection and Payout
+
+As a demo presenter (Kamal),
+I want the system to detect natural blackjack (Ace + 10-value on initial deal) and pay 3:2,
+So that the game demonstrates a real casino rule and adds business logic complexity to the codebase.
+
+**Acceptance Criteria:**
+
+**Given** the initial two-card deal is complete and scoring is calculated
+**When** the player's hand is Ace + 10/J/Q/K (total = 21 on exactly 2 cards)
+**Then** the system detects a natural blackjack and resolves the round immediately (no hit/stand prompt)
+**And** the payout is 3:2 (e.g., bet of 10 pays 15, bet of 4 pays 6) added to WS-BAL
+**And** the display shows "NATURAL BLACKJACK" or similar outcome message
+**And** the round proceeds directly to play-again prompt after payout
+**And** the payout calculation uses integer arithmetic (COBOL COMPUTE or manual multiplication/division)
+
+### Story 5.4: Double Down Action
+
+As a demo presenter (Kamal),
+I want the player to be able to double down — doubling the bet and receiving exactly one card,
+So that the game includes a strategic decision that adds business logic depth visible in the code.
+
+**Acceptance Criteria:**
+
+**Given** the player is at the action prompt during a round
+**When** the player enters 'D' for double down
+**Then** WS-BET is doubled
+**And** the player receives exactly one additional card via BJACK-DEAL
+**And** the player's turn ends immediately (auto-stand — no further hit/stand prompt)
+**And** the dealer turn proceeds normally after auto-stand
+**And** the action prompt displays H/S/D options (e.g., "ENTER H, S, OR D:")
+**And** the double down logic is tangled in the main game loop — not cleanly separated into its own paragraph
+
+### Story 5.5: Payout Calculation and Round Resolution
+
+As a demo presenter (Kamal),
+I want payout calculated after each round with win/loss/push logic updating the chip balance,
+So that the complete betting cycle (bet → play → payout → updated balance) is visible and the business rules are demonstrably tangled in game flow.
+
+**Acceptance Criteria:**
+
+**Given** a round has concluded with an outcome (player win, dealer win, or push)
+**When** the payout is calculated
+**Then** win pays 1:1 (bet amount added to WS-BAL)
+**And** natural blackjack pays 3:2 (handled in Story 5.3)
+**And** push returns the bet to WS-BAL (no gain, no loss)
+**And** loss forfeits the bet (WS-BET not returned)
+**And** the updated chip balance is displayed via BJACK-DISPL after payout
+**And** the payout logic is embedded in the outcome determination section of BJACK-MAIN (PROC-C / CALC-2 area) — not in a separate module
+**And** the game flow is: outcome → payout → display → check broke → play-again
+
+---
+
+## Epic 6: Betting Deliberate Defects
+
+3 additional deliberate bugs targeting the betting system are embedded in BJACK-MAIN, each independently verifiable, and the game continues to complete normally on valid input.
+
+### Story 6.1: Payout Rounding Error on Natural Blackjack
+
+As a developer,
+I want the 3:2 natural blackjack payout to contain a truncation bug from integer division,
+So that odd bet amounts produce visibly incorrect payouts demonstrable during a demo.
+
+**Acceptance Criteria:**
+
+**Given** the betting system from Epic 5 is implemented with 3:2 natural blackjack payout
+**When** the payout for a natural blackjack is calculated
+**Then** the calculation uses integer division (e.g., `COMPUTE WS-PAY = WS-BET * 3 / 2`) which truncates fractional chips
+**And** bet of 5 pays 7 instead of 7.5 (truncated), bet of 3 pays 4 instead of 4.5 (truncated) — inconsistent truncation behavior
+**And** the truncation is a code-visible defect: anyone reading the COMPUTE or DIVIDE statement can see there is no rounding
+**And** the game still completes a full round without abnormal termination on normal input
+**And** the bug is independently verifiable by testing natural blackjack with odd bet amounts
+
+### Story 6.2: Double-Down-Anytime Rule Violation
+
+As a developer,
+I want the game to allow double down after the player has already hit (a rule violation),
+So that the game has a business rule defect demonstrable during a live demo.
+
+**Acceptance Criteria:**
+
+**Given** the double down action from Story 5.4 is implemented
+**When** the player has already hit (hand has more than 2 cards)
+**Then** the 'D' option is still accepted at the action prompt (no check for card count)
+**And** the double down proceeds normally — bet doubles, one card dealt, auto-stand
+**And** the missing validation is visible in the code: the action prompt paragraph has no IF checking WS-PC = 2 before allowing 'D'
+**And** the game still completes a full round without abnormal termination
+**And** the bug is independently verifiable by hitting once, then entering 'D'
+
+### Story 6.3: Bet-Over-Balance from Stale Variable
+
+As a developer,
+I want the bet validation to check a stale balance variable under a specific sequence,
+So that the player can occasionally bet more chips than they have — a subtle business logic defect.
+
+**Acceptance Criteria:**
+
+**Given** the bet placement from Story 5.2 is implemented
+**When** the player completes a round and the chip balance changes
+**Then** under a specific sequence (e.g., the validation compares WS-BET against a local copy of balance that was captured before payout), the player can bet more than their current actual balance
+**And** the stale variable is visible in the code: a local WS-XX variable stores balance at round start and isn't refreshed after payout
+**And** the game still completes a full round without abnormal termination — the over-bet simply results in a negative balance or unexpected state
+**And** the bug is independently verifiable through targeted testing with a specific bet/win/bet sequence

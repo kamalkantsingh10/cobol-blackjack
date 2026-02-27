@@ -1,16 +1,76 @@
-      * BJACK-SCORE -- HAND VALUE CALCULATION
-      * WRITTEN 06/84 -- UPDATED 04/90 FOR ACE RECALC LOGIC
+      * BJACK-SCORE -- HAND EVALUATION ROUTINE
+      * WRITTEN 02/85 -- UPDATED 11/90 FOR BLACKJACK NATURAL DETECTION
+      * CALC-1 -- SUMS VALUES USING LOOKUP TABLE
        IDENTIFICATION DIVISION.
        PROGRAM-ID. BJACK-SCORE.
        ENVIRONMENT DIVISION.
        DATA DIVISION.
        WORKING-STORAGE SECTION.
+           77 WS-X1          PIC 999.
+           77 WS-CT1         PIC 99.
+           77 WS-CT2         PIC 99.
+       LINKAGE SECTION.
            COPY WS-HANDS.
            COPY WS-GAME.
-           77 WS-X1          PIC 9.
-       PROCEDURE DIVISION.
+       PROCEDURE DIVISION USING WS-HND WS-GM.
        INIT-1.
            MOVE 0 TO WS-X1
+           MOVE 0 TO WS-CT1
+           MOVE 0 TO WS-CT2
            GO TO PROC-A.
        PROC-A.
-           STOP RUN.
+           MOVE 0 TO WS-X1
+           MOVE 0 TO WS-CT2
+           MOVE 1 TO WS-CT1
+           GO TO CALC-1.
+       CALC-1.
+           IF WS-CT1 > WS-PC
+               GO TO CALC-2
+           END-IF
+           ADD WS-PFV(WS-CT1) TO WS-X1
+           IF WS-PFV(WS-CT1) = 11
+               ADD 1 TO WS-CT2
+           END-IF
+           ADD 1 TO WS-CT1
+           GO TO CALC-1.
+       CALC-2.
+           IF WS-X1 <= 21
+               GO TO CALC-3
+           END-IF
+           IF WS-CT2 = 0
+               GO TO CALC-3
+           END-IF
+           SUBTRACT 10 FROM WS-X1
+           SUBTRACT 1 FROM WS-CT2
+           GO TO CALC-2.
+       CALC-3.
+           MOVE WS-X1 TO WS-PT
+           GO TO PROC-B.
+       PROC-B.
+           MOVE 0 TO WS-X1
+           MOVE 0 TO WS-CT2
+           MOVE 1 TO WS-CT1
+           GO TO CALC-4.
+       CALC-4.
+           IF WS-CT1 > WS-DC
+               GO TO CALC-5
+           END-IF
+           ADD WS-DFV(WS-CT1) TO WS-X1
+           IF WS-DFV(WS-CT1) = 11
+               ADD 1 TO WS-CT2
+           END-IF
+           ADD 1 TO WS-CT1
+           GO TO CALC-4.
+       CALC-5.
+           IF WS-X1 <= 21
+               GO TO CHECK-X
+           END-IF
+           IF WS-CT2 = 0
+               GO TO CHECK-X
+           END-IF
+           SUBTRACT 10 FROM WS-X1
+           SUBTRACT 1 FROM WS-CT2
+           GO TO CALC-5.
+       CHECK-X.
+           MOVE WS-X1 TO WS-DT
+           GOBACK.

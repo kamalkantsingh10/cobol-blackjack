@@ -1,4 +1,4 @@
-# generated: 2026-02-26
+# generated: 2026-02-27
 # project: cobol-blackjack
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-26
+generated: 2026-02-27
 project: cobol-blackjack
 project_key: NOKEY
 tracking_system: file-system
@@ -41,22 +41,23 @@ story_location: docs/implementation-artifacts
 
 development_status:
   # ── Epic 1: Working Project Skeleton ─────────────────────────────────────
-  epic-1: in-progress
+  epic-1: done
   1-1-project-scaffold-and-shared-data-structures: done
-  1-2-middleware-stubs-and-build-pipeline-validation: review
+  1-2-middleware-stubs-and-build-pipeline-validation: done
   epic-1-retrospective: optional
 
   # ── Epic 2: Playable Blackjack with Authentic Terminal Presentation ───────
-  epic-2: backlog
-  2-1-deck-module-initialization-and-shuffle: backlog
-  2-2-deal-module-initial-hand-distribution: backlog
-  2-3-scoring-module-hand-value-calculation: backlog
-  2-4-display-module-terminal-rendering: backlog
-  2-5-dealer-module-dealer-turn-logic: backlog
-  2-6-main-game-loop-full-playable-round: backlog
+  epic-2: in-progress
+  2-1-deck-module-initialization-and-shuffle: review
+  2-2-deal-module-initial-hand-distribution: review
+  2-3-scoring-module-hand-value-calculation: review
+  2-4-display-module-terminal-rendering: review
+  2-5-dealer-module-dealer-turn-logic: review
+  2-6-main-game-loop-full-playable-round: review
+  2-7-display-module-visual-upgrade: review
   epic-2-retrospective: optional
 
-  # ── Epic 3: Deliberate Defects ────────────────────────────────────────────
+  # ── Epic 3: Deliberate Defects (Original 6) ─────────────────────────────
   epic-3: backlog
   3-1-biased-shuffle-and-dead-code: backlog
   3-2-off-by-one-in-deal-array: backlog
@@ -65,7 +66,23 @@ development_status:
   3-5-no-input-validation-on-hit-stand-prompt: backlog
   epic-3-retrospective: optional
 
-  # ── Epic 4: Demo Documentation ────────────────────────────────────────────
+  # ── Epic 4: Demo Documentation ──────────────────────────────────────────
   epic-4: backlog
   4-1-readme-launch-instructions-and-known-bugs-list: backlog
   epic-4-retrospective: optional
+
+  # ── Epic 5: Betting System with Business Logic ──────────────────────────
+  epic-5: backlog
+  5-1-copybook-extension-and-chip-balance-initialization: backlog
+  5-2-bet-placement-and-validation: backlog
+  5-3-natural-blackjack-detection-and-payout: backlog
+  5-4-double-down-action: backlog
+  5-5-payout-calculation-and-round-resolution: backlog
+  epic-5-retrospective: optional
+
+  # ── Epic 6: Betting Deliberate Defects ──────────────────────────────────
+  epic-6: backlog
+  6-1-payout-rounding-error-on-natural-blackjack: backlog
+  6-2-double-down-anytime-rule-violation: backlog
+  6-3-bet-over-balance-from-stale-variable: backlog
+  epic-6-retrospective: optional
