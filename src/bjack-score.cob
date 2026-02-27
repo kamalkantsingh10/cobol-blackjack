@@ -33,6 +33,7 @@
            END-IF
            ADD 1 TO WS-CT1
            GO TO CALC-1.
+      * CALC-2 -- ACE ADJUSTMENT LOOP (HANDLES MULTIPLE ACES)
        CALC-2.
            IF WS-X1 <= 21
                GO TO CALC-3
@@ -42,7 +43,7 @@
            END-IF
            SUBTRACT 10 FROM WS-X1
            SUBTRACT 1 FROM WS-CT2
-           GO TO CALC-2.
+           GO TO CALC-3.
        CALC-3.
            MOVE WS-X1 TO WS-PT
            GO TO PROC-B.
@@ -70,7 +71,7 @@
            END-IF
            SUBTRACT 10 FROM WS-X1
            SUBTRACT 1 FROM WS-CT2
-           GO TO CALC-5.
+           GO TO CHECK-X.
        CHECK-X.
            MOVE WS-X1 TO WS-DT
            GOBACK.

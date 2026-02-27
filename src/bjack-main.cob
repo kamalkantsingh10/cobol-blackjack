@@ -24,6 +24,7 @@
            MOVE 0 TO WS-STAT
            CALL 'BJACK-DISPL' USING BY REFERENCE WS-HND WS-GM
            GO TO LOOP-A.
+      * LOOP-A -- VALIDATES INPUT AND ROUTES TO HIT OR STAND
        LOOP-A.
            DISPLAY "   ENTER H OR S:"
            ACCEPT WS-FLG-A

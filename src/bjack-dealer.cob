@@ -21,9 +21,17 @@
            GO TO PROC-A.
        PROC-A.
            IF WS-DT >= 17
-               GO TO CHECK-X
+               GO TO SOFT-1
            END-IF
            GO TO LOOP-A.
+      * SOFT-1 -- HIT ON SOFT 17 PER NEVADA GAMING COMMISSION RULES
+       SOFT-1.
+           IF WS-DT = 17
+               IF WS-CT3 > 0
+                   GO TO CHECK-X
+               END-IF
+           END-IF
+           GO TO CHECK-X.
       * LOOP-A -- DRAWS FROM SHUFFLED SUBSET ONLY
        LOOP-A.
            ADD 1 TO WS-DC

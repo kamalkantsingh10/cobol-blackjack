@@ -1,6 +1,6 @@
 # Story 2.7: Display Module — Visual Upgrade (Card Art, Color, Panel)
 
-Status: done
+Status: review
 
 ## Story
 
@@ -16,14 +16,14 @@ so that the terminal display visually reads as an authentic 1980s card table —
 
 2. **Given** WS-HANDS is populated with cards,
    **When** BJACK-DISPL renders a hand,
-   **Then** each card is displayed as an ASCII box showing rank and suit:
+   **Then** each card is displayed as an ASCII box showing rank and Unicode suit symbol:
    ```
    +----+
    |RK  |
-   |   S|
+   |   ♠|
    +----+
    ```
-   Where RK is the 2-char rank (e.g., `A `, `10`, `K `) and S is the 1-char suit (H/D/C/S).
+   Where RK is the 2-char rank (e.g., `A `, `10`, `K `) and the suit position shows a Unicode symbol: ♥ (Hearts), ♦ (Diamonds), ♣ (Clubs), ♠ (Spades) — mapped from WS-DS1/WS-PS1 (H/D/C/S) via WS-SYM PIC X(3) holding the 3-byte UTF-8 sequence.
 
 3. **Given** a hand contains multiple cards,
    **When** the hand is rendered,
@@ -31,7 +31,7 @@ so that the terminal display visually reads as an authentic 1980s card table —
    ```
    +----+ +----+ +----+
    |A   | |10  | |K   |
-   |   H| |   S| |   C|
+   |   ♥| |   ♠| |   ♣|
    +----+ +----+ +----+
    ```
 
@@ -344,3 +344,31 @@ Add one more:
 - Architecture: Terminal Display Architecture, Enforcement Guidelines
 - Story 2.4: Base implementation being upgraded (same LINKAGE, same module boundaries)
 - Story 1.1: Canonical copybook field names (WS-DRK, WS-DS1, WS-PRK, WS-PS1, WS-DC, WS-PC, WS-DT, WS-PT, WS-RC, WS-STAT)
+
+## Dev Agent Record
+
+### Agent Model Used
+
+claude-sonnet-4-6
+
+### Debug Log References
+
+None — clean implementation, zero compile errors.
+
+### Completion Notes List
+
+- Fully rewrote `src/bjack-displ.cob` PROCEDURE DIVISION and extended WORKING-STORAGE with 4 new vars for the visual upgrade.
+- WORKING-STORAGE additions: WS-ESC PIC X VALUE X"1B" (ANSI escape char), WS-BF1 PIC X(80) (line buffer for border rows), WS-POS PIC 99 (buffer position cursor), WS-SYM PIC X(3) (3-byte UTF-8 suit symbol). LINKAGE SECTION unchanged.
+- PROCEDURE DIVISION: 24 paragraphs — INIT-1, PROC-A, CALC-1, LOOP-A, LOOP-AX, LOOP-B, LOOP-C0, LOOP-C, LOOP-D, LOOP-D1, LOOP-DX, CALC-2, PROC-B, CALC-3, CALC-3X, CALC-4, CALC-5A, CALC-5, CALC-6, CALC-6A, CALC-6X, CALC-7, CHECK-X, CHECK-Y.
+- PROC-A: screen clear (ESC[2J + ESC[H) then bold-yellow bordered title panel (ESC[1;33m / ESC[0m).
+- Border rows (LOOP-A/LOOP-D/CALC-3/CALC-6 families): built in WS-BF1 using reference modification `WS-BF1(WS-POS:7)` with "+----+ " per card, DISPLAY in yellow (ESC[33m).
+- Rank rows (LOOP-B/CALC-4): WITH NO ADVANCING loop — per card: red ESC[31m if H/D suit, white ESC[37m if C/S; display `|RK  | ` where RK is WS-DRK/WS-PRK; reset ESC[0m after each card.
+- Suit rows (LOOP-C/CALC-5): same color logic; maps WS-DS1/WS-PS1 (H/D/C/S) to Unicode via WS-SYM: H→X"E299A5" (♥), D→X"E299A6" (♦), C→X"E299A3" (♣), S→X"E299A0" (♠); displays `|   SYM| `.
+- CHECK-X / CHECK-Y: unchanged from Story 2-4 — GOBACK on WS-STAT=0, nested IF on WS-RC for outcome messages.
+- Anti-patterns: 4 wrong/outdated comments kept (SIXEL protocol, VT100, cursor positioning, hole card masking), GOTO throughout, WS-XX names, no EVALUATE, no SECTIONS, GOBACK not STOP RUN, zero return-code checks.
+- Compiled: `cobc -c -I copy/ src/bjack-displ.cob` — exit code 0, only expected _FORTIFY_SOURCE warning.
+- Full game build: `bash build.sh` — game runs with upgraded display; screen clears between renders, cards render as ASCII boxes with color, Unicode suit symbols display correctly.
+
+### File List
+
+- src/bjack-displ.cob (modified — complete rewrite of PROCEDURE DIVISION, extended WORKING-STORAGE)

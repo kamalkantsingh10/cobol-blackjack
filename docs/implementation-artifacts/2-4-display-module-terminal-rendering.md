@@ -42,6 +42,7 @@ so that Kamal sees an authentic 1980s-era mainframe display showing both hands, 
   - [x] Place `COPY WS-HANDS.` and `COPY WS-GAME.` in LINKAGE SECTION (in that order)
   - [x] Change PROCEDURE DIVISION header to: `PROCEDURE DIVISION USING WS-HND WS-GM.`
   - [x] Declare local 77-level items in WORKING-STORAGE: WS-CT1 PIC 99, WS-X1 PIC 9
+  - NOTE: Story 2-7 subsequently added WS-ESC PIC X, WS-BF1 PIC X(80), WS-POS PIC 99, WS-SYM PIC X(3) — current file has 6 WORKING-STORAGE vars total
 
 - [x] Task 2: Implement header/display entry (AC: #4, #5)
   - [x] INIT-1 paragraph: MOVE 0 TO WS-CT1, MOVE 0 TO WS-X1, GO TO PROC-A
@@ -352,7 +353,7 @@ None — clean implementation, zero compile errors.
 
 ### Completion Notes List
 
-- Rewrote `src/bjack-displ.cob` from stub to full implementation.
+- Rewrote `src/bjack-displ.cob` from stub to initial 10-paragraph implementation.
 - DATA DIVISION: removed COPY WS-HANDS/WS-DECK from WORKING-STORAGE; added LINKAGE SECTION with COPY WS-HANDS and COPY WS-GAME; added 77-level WS-CT1 (PIC 99) and WS-X1 (PIC 9) locally.
 - PROCEDURE DIVISION: 10 paragraphs (INIT-1, PROC-A, CALC-1, LOOP-A, CALC-2, PROC-B, CALC-3, CALC-4, CHECK-X, CHECK-Y) — all vague names, all GOTO-driven.
 - Dealer loop (LOOP-A): iterates WS-CT1 1..WS-DC displaying WS-DRK(n)(WS-DS1(n)).
@@ -361,6 +362,7 @@ None — clean implementation, zero compile errors.
 - CHECK-Y: nested IF on WS-RC (1=PLAYER WINS, 2=DEALER WINS, 3=PUSH -- TIE GAME).
 - Anti-patterns: 3 wrong comments, GOTO throughout, WS-XX names, no EVALUATE, no SECTIONS, GOBACK not STOP RUN, zero return-code checks.
 - Compiled: `cobc -c -I copy/ src/bjack-displ.cob` — exit code 0, only expected _FORTIFY_SOURCE warning.
+- **SUPERSEDED:** `src/bjack-displ.cob` was fully rewritten by Story 2-7 (visual upgrade). The current file contains 24 paragraphs and 6 WORKING-STORAGE variables (WS-CT1, WS-X1, WS-ESC, WS-BF1, WS-POS, WS-SYM) with ANSI escape codes, Unicode suit symbols, and ASCII card-box rendering. The above notes describe the Story 2-4 implementation only — see Story 2-7 Dev Agent Record for the current state of this file.
 
 ### File List
 

@@ -47,23 +47,23 @@ development_status:
   epic-1-retrospective: optional
 
   # ── Epic 2: Playable Blackjack with Authentic Terminal Presentation ───────
-  epic-2: in-progress
-  2-1-deck-module-initialization-and-shuffle: review
-  2-2-deal-module-initial-hand-distribution: review
-  2-3-scoring-module-hand-value-calculation: review
-  2-4-display-module-terminal-rendering: review
-  2-5-dealer-module-dealer-turn-logic: review
-  2-6-main-game-loop-full-playable-round: review
-  2-7-display-module-visual-upgrade: review
+  epic-2: done
+  2-1-deck-module-initialization-and-shuffle: done
+  2-2-deal-module-initial-hand-distribution: done
+  2-3-scoring-module-hand-value-calculation: done
+  2-4-display-module-terminal-rendering: done
+  2-5-dealer-module-dealer-turn-logic: done
+  2-6-main-game-loop-full-playable-round: done
+  2-7-display-module-visual-upgrade: done
   epic-2-retrospective: optional
 
   # ── Epic 3: Deliberate Defects (Original 6) ─────────────────────────────
-  epic-3: backlog
-  3-1-biased-shuffle-and-dead-code: backlog
-  3-2-off-by-one-in-deal-array: backlog
-  3-3-ace-recalculation-failure: backlog
-  3-4-soft-17-rule-violation: backlog
-  3-5-no-input-validation-on-hit-stand-prompt: backlog
+  epic-3: in-progress
+  3-1-biased-shuffle-and-dead-code: review
+  3-2-off-by-one-in-deal-array: review
+  3-3-ace-recalculation-failure: review
+  3-4-soft-17-rule-violation: review
+  3-5-no-input-validation-on-hit-stand-prompt: review
   epic-3-retrospective: optional
 
   # ── Epic 4: Demo Documentation ──────────────────────────────────────────

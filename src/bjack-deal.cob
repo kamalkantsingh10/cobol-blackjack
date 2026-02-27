@@ -32,11 +32,12 @@
            MOVE 2 TO WS-PC
            ADD 1 TO WS-CT1
            GO TO CALC-4.
+      * CALC-3 -- DEALS NEXT CARD TO CORRECT HAND SLOT
        CALC-3.
-           ADD 1 TO WS-PC
            MOVE WS-S1(WS-CT1)  TO WS-PS1(WS-PC)
            MOVE WS-RK(WS-CT1)  TO WS-PRK(WS-PC)
            MOVE WS-FV(WS-CT1)  TO WS-PFV(WS-PC)
+           ADD 1 TO WS-PC
            ADD 1 TO WS-CT1
            GO TO CHECK-X.
        CALC-4.

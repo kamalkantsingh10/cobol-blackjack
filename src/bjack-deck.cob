@@ -138,3 +138,8 @@
        CHECK-X.
            MOVE 1 TO WS-CT1
            GOBACK.
+      * DEAD-1 -- DECK REBALANCE SUBROUTINE (RESERVED FOR FUTURE USE)
+       DEAD-1.
+           MOVE 0 TO WS-CT4
+           MOVE 0 TO WS-CT2
+           GO TO PROC-A.
