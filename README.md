@@ -1,18 +1,20 @@
-# COBOL Blackjack — A Legacy Modernization Demo
+# COBOL Blackjack — A Legacy Modernization Playground
 
-This is a deliberately broken, authentically messy COBOL Blackjack application — the **"before"** in a live modernization showcase. It was built not to be good code, but to be *real* bad code: the kind of legacy system that exists in production today and makes modernization so hard to explain to people who've never seen one.
+Ever wanted to practice modernizing a legacy system but had no legacy system to work with? This is that project.
 
-The core insight behind this project: **you can't sell what people can't picture.** Decision-makers delay modernization because abstract pitches don't create urgency. A live, running Blackjack game on a mainframe terminal — with betting, chip management, and payout logic tangled in GOTO spaghetti — does.
+COBOL Blackjack is a small, deliberately imperfect, multi-file COBOL application — a fully playable Blackjack game written in authentic 1980s mainframe style. It's got everything a real legacy codebase has: cryptic variable names, GOTO-driven control flow, dead code, orphaned features, foreign-language comments from contract teams long gone, and nine embedded bugs that have survived undetected across decades of fictional maintenance cycles.
 
-Blackjack is the perfect vehicle. Every leader in the room already knows the rules, so they can follow the game without understanding COBOL. What they're watching is a terminal-based application running on what looks and feels like a real mainframe — cryptic variable names, spaghetti logic, dead code, deliberate bugs, and decades of accumulated debt, all visible and pointable in a live demo.
+The scope is intentionally small. You can read the entire codebase in an afternoon, understand what it does, and start modernizing it without a team or a budget or six months of onboarding. It's a safe, contained environment to try out modernization approaches — whether that's refactoring in place, rewriting in a modern language, applying AI-assisted code transformation, or just practicing the discipline of understanding code you didn't write.
 
-> **Note:** This code contains intentional defects and anti-patterns. A developer who "fixes" this code is breaking it. The bugs are features.
+Blackjack is the right domain for this. The rules are universal, so you can verify correctness without being a COBOL expert. If the game plays right after your changes, you're probably on track.
+
+> **Note:** This code contains intentional defects and anti-patterns. They are listed in full below. A developer who "fixes" them without meaning to is breaking a feature — read the bug list before you start.
 
 ---
 
 ## Demo
 
-<video src="demo.mp4" controls title="COBOL Blackjack gameplay demo"></video>
+<video src="https://github.com/user-attachments/assets/d6d193c8-a927-4b40-9c35-f2664fa2709a" controls title="COBOL Blackjack gameplay demo"></video>
 
 ---
 
