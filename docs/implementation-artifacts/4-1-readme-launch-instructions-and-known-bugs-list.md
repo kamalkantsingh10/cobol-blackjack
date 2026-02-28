@@ -1,6 +1,6 @@
 # Story 4.1: README — Launch Instructions and Known Bugs List
 
-Status: review
+Status: done
 
 ## Story
 
@@ -179,6 +179,27 @@ None — documentation-only story, no COBOL changes.
   applied throughout. "TESTED ON GNUCOBOL 2.0" embedded as required
   inaccurate statement (FR17).
 - No COBOL source files modified. Documentation-only story.
+
+### Code Review Fixes (claude-sonnet-4-6)
+
+- H1: Bug 7 paragraph name updated from placeholder to `PROC-NB` (confirmed
+  from bjack-main.cob:52 after Epic 5 completion).
+- H2: Bug 6 description updated — "one check only" was stale after Story 5.4
+  added the 'D' double-down branch. New description accurately states two
+  explicit checks (S and D) with garbage-input fallthrough to hit.
+- M4: Bug 8 paragraph note `(SEE STORY 6.2 TO CONFIRM AFTER EPIC 6 DONE)`
+  removed — LOOP-A confirmed from bjack-main.cob:60.
+- M3: Bug 9 description unchanged (documents planned Epic 6 defect) but added
+  `NOTE -- DEFECT NOT YET ACTIVE. PENDING EPIC 6 IMPLEMENTATION.` to prevent
+  demo presenter from pointing at code that doesn't yet exhibit the defect.
+
+### Code Review Fixes — Epic 6 Complete (claude-sonnet-4-6)
+
+- Bug 9 "PENDING EPIC 6 IMPLEMENTATION" note removed — Epic 6 done, defect now active.
+- Bug 9 trigger description corrected: was "WIN-THEN-BET", actual trigger is
+  lose-chips-then-over-bet (WS-BL frozen at 100; WS-BAL drops after loss;
+  player can bet up to original starting amount).
+- Bug 9 paragraph reference cleaned: removed "(SEE STORY 6.3 TO CONFIRM AFTER EPIC 6 DONE)".
 
 ### File List
 

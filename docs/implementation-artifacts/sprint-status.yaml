@@ -67,22 +67,29 @@ development_status:
   epic-3-retrospective: optional
 
   # ── Epic 4: Demo Documentation ──────────────────────────────────────────
-  epic-4: in-progress
-  4-1-readme-launch-instructions-and-known-bugs-list: review
+  epic-4: done
+  4-1-readme-launch-instructions-and-known-bugs-list: done
   epic-4-retrospective: optional
 
   # ── Epic 5: Betting System with Business Logic ──────────────────────────
-  epic-5: in-progress
-  5-1-copybook-extension-and-chip-balance-initialization: ready-for-dev
-  5-2-bet-placement-and-validation: ready-for-dev
-  5-3-natural-blackjack-detection-and-payout: ready-for-dev
-  5-4-double-down-action: ready-for-dev
-  5-5-payout-calculation-and-round-resolution: ready-for-dev
+  epic-5: done
+  5-1-copybook-extension-and-chip-balance-initialization: done
+  5-2-bet-placement-and-validation: done
+  5-3-natural-blackjack-detection-and-payout: done
+  5-4-double-down-action: done
+  5-5-payout-calculation-and-round-resolution: done
   epic-5-retrospective: optional
 
   # ── Epic 6: Betting Deliberate Defects ──────────────────────────────────
-  epic-6: backlog
-  6-1-payout-rounding-error-on-natural-blackjack: backlog
-  6-2-double-down-anytime-rule-violation: backlog
-  6-3-bet-over-balance-from-stale-variable: backlog
+  epic-6: done
+  6-1-payout-rounding-error-on-natural-blackjack: done
+  6-2-double-down-anytime-rule-violation: done
+  6-3-bet-over-balance-from-stale-variable: done
   epic-6-retrospective: optional
+
+  # ── Epic 7: Tech Debt Saturation ────────────────────────────────────────
+  epic-7: done
+  7-1-orphaned-feature-code: done
+  7-2-anti-pattern-saturation: done
+  7-3-readme-anti-pattern-catalogue: done
+  epic-7-retrospective: optional

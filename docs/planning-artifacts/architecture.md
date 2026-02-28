@@ -10,10 +10,12 @@ date: '2026-02-26'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-02-26'
-lastUpdated: '2026-02-27'
+lastUpdated: '2026-02-28'
 updateHistory:
   - date: '2026-02-27'
     changes: 'Added betting system, natural blackjack, double down, 3 new deliberate defects, updated FR mapping from 32 to 46 FRs'
+  - date: '2026-02-28'
+    changes: 'Added Accumulated Debt Patterns section (FR47-FR52 / Epic 7): orphaned feature code, ghost copybook fields, ghost local variables, no-op operations, contradictory version headers, foreign-language comments. Full pattern spec with file/paragraph assignments. Sprint Change Proposal 2026-02-28 approved by Kamal.'
 ---
 
 # Architecture Decision Document
@@ -767,3 +769,143 @@ touch cobol-blackjack/build.sh && chmod +x cobol-blackjack/build.sh
 # Then: implement WS-DECK.cpy, WS-HANDS.cpy, WS-GAME.cpy with canonical field names
 # Lock those field names before any .cob module work begins
 ```
+
+---
+
+## Accumulated Debt Patterns (Epic 7 — FR47–FR52)
+
+*Added 2026-02-28. Sprint Change Proposal approved by Kamal.*
+
+### Purpose
+
+Epic 7 transforms the codebase from "clean code with deliberate bugs" into "authentic 40-year-old legacy system." All patterns have zero runtime impact. Existing 9 bugs (Epics 3 and 6) are unchanged.
+
+### Pattern Specifications
+
+#### Orphaned Feature Code (FR47)
+
+**What:** Commented-out paragraph blocks in every module representing dropped features.
+
+**Format rules:**
+- Every line of the block must use column 7 `*` indicator — paragraph header, code lines, blank closing line
+- Block must be syntactically valid COBOL if the `*` were removed
+- No PERFORM or GOTO in any live paragraph may reference the orphaned paragraph name
+- Precede each block with a comment naming the feature and the reason it was dropped (e.g., `NOT ACTIVE PER MGR NOTE 09/87`, `REMOVED 10/87`, `DISABLED 1989`)
+
+**Feature assignments:**
+- `bjack-main.cob`: PROC-SP — split hand entry point
+- `bjack-deal.cob`: PROC-DS — deal to split hand
+- `bjack-score.cob`: PROC-CB — five-card charlie bonus (Nevada rule, dropped 06/88)
+- `bjack-dealer.cob`: PROC-INS — insurance offer when dealer shows Ace
+- `bjack-displ.cob`: CALC-8 / CALC-8A / CALC-8X — split hand display loop
+- `legacy-random-gen.cob`: PROC-R1 — original LCG random number generator (replaced by fixed return per Defect 0042)
+- `casino-audit-log.cob`: PROC-WR — full audit file write (disabled 1989, file not configured)
+
+#### Ghost Copybook Fields (FR48)
+
+**What:** Field declarations in .cpy files that are included in all modules via COPY but never read or written in any PROCEDURE DIVISION.
+
+**Format rules:**
+- Follow existing group/level structure in the copybook
+- Use cryptic WS-XX names (WS-SC, WS-SP, WS-INS etc.) — no descriptive names
+- Precede with a misleading comment tying the field to the dropped feature
+
+**Field assignments:**
+- `copy/WS-HANDS.cpy`: Add after existing player hand group:
+  ```
+  * WS-SC -- SPLIT CARD COUNT RESERVED 1987
+       05 WS-SC           PIC 99.
+       05 WS-SPLT OCCURS 11 TIMES.
+           10 WS-SV       PIC 99.
+           10 WS-SS       PIC X.
+  ```
+- `copy/WS-GAME.cpy`: Add after WS-STAT:
+  ```
+  * WS-SP -- SPLIT ACTIVE FLAG. WS-INS -- INSURANCE TAKEN FLAG
+       05 WS-SP           PIC X.
+       05 WS-INS          PIC X.
+  ```
+
+#### Ghost Local Variables (FR49)
+
+**What:** 77-level declarations in WORKING-STORAGE that are initialized to a value but never referenced in PROCEDURE DIVISION.
+
+**Rules:**
+- Cryptic name (WS-X2, WS-CB pattern)
+- Misleading comment implying the variable was part of a removed feature or reserved for future use
+- No MOVE, COMPUTE, IF, or DISPLAY in PROCEDURE DIVISION references this variable
+
+**Assignments:**
+- `src/bjack-deal.cob`: `77 WS-X2 PIC 9` — "TEMPORARY CARD BUFFER. RESERVED FOR PHASE 2 1987."
+- `src/bjack-score.cob`: `77 WS-CB PIC 9` — "CHARLIE BONUS FLAG. OBSOLETE AFTER PROC-CB REMOVED."
+
+#### No-Op Operations (FR50)
+
+**What:** COBOL statements that compile and execute but produce no observable side effect.
+
+**Two accepted forms:**
+1. `COMPUTE WS-X1 = WS-X1 + 0` — adds zero to a variable, result identical
+2. Duplicate `MOVE ZERO TO field` where the field is already guaranteed zero at that point
+
+**Rules:**
+- Must be in a live paragraph (not commented out) — the statement must actually execute
+- Must not break any existing logic (zero side effect)
+- May optionally have an incorrect comment explaining why the operation is "necessary"
+
+**Assignments:**
+- `src/bjack-main.cob` INIT-1: add `COMPUTE WS-X1 = WS-X1 + 0` (residue from an emergency patch)
+- `src/bjack-dealer.cob` LOOP-A: add duplicate `MOVE ZERO TO WS-CT3` before the existing reset
+
+#### Contradictory Version Headers (FR51)
+
+**What:** WRITTEN/UPDATED date comments in module headers that cannot all be true simultaneously.
+
+**Plausible contradiction types:**
+- Updated date precedes written date (code copied from another system, header not updated)
+- Same date repeated three times (auto-generated header tool bug)
+- Revision number goes backwards (management-directed renumbering after reorg)
+- Future-dated update (clock skew on build server)
+
+**Assignments:**
+- `src/bjack-main.cob`: Change WRITTEN 01/12/84 UPDATED 06/88 → WRITTEN 03/85 UPDATED 11/83
+- `src/bjack-deal.cob`: Add UPDATED 07/84 UPDATED 07/84 UPDATED 07/84 (same date × 3)
+- `src/bjack-score.cob`: Add UPDATED 02/91 with note "YEAR DISCREPANCY ACKNOWLEDGED"
+- `src/casino-audit-log.cob`: Add REV 2.1 UPDATED 05/89. PREVIOUS REV 4.0 ARCHIVED.
+
+#### Foreign-Language Comments (FR52)
+
+**What:** Comments in French or German in column 7 `*` form. Must read as plausible internal system notes from contracted European development teams (1987–1989 period).
+
+**Format rules:**
+- Column 7 `*`, content in columns 8–72 (max 64 characters of comment text)
+- French: use for defect report references (ANOMALIE YYYY-NNN), terminal compatibility notes (TERMINAL COULEUR, AFFICHAGE), or system compatibility notes
+- German: use for warnings (ACHTUNG), regulatory compliance (NEVADA-VORSCHRIFT, REGLEMENTATION), or implementation status (AUSGESETZT, NICHT GETESTET)
+- Do not use accented characters — 1980s terminals were ASCII-only
+
+**Assignments:**
+
+French:
+- `src/bjack-score.cob` before CALC-2: `* AJUSTEMENT VALEUR AS -- VOIR RAPPORT ANOMALIE 1987-004`
+- `src/bjack-displ.cob` in display section: `* AFFICHAGE ECRAN -- MISE A JOUR POUR TERMINAL COULEUR 06/89`
+- `src/legacy-random-gen.cob` before hardcoded return: `* CORRECTION -- VALEUR FIXE POUR COMPATIBILITE SYSTEME 1987`
+
+German:
+- `src/bjack-deal.cob` before CALC-3: `* ACHTUNG: KARTENLOGIK NACH AENDERUNG NICHT GETESTET 08/88`
+- `src/bjack-dealer.cob` before soft-17 check: `* HINWEIS: SOFT-17-REGEL GEMAESS NEVADA-VORSCHRIFT ANGEPASST`
+- `src/casino-audit-log.cob` at stub paragraph: `* PRUEFPROTOKOLL -- VOLLSTAENDIGE IMPLEMENTIERUNG AUSGESETZT 1988`
+
+### Constraints
+
+**MUST:**
+- `./build.sh` exits 0 after every story — no new compile errors
+- All 7 tests (T31–T34, T61–T63) pass after each story
+- All 9 deliberate bugs remain active and demonstrable after Epic 7
+- Every orphaned paragraph uses column 7 `*` on every line — no partial commenting
+- All foreign-language comments stay within column 72
+
+**MUST NOT:**
+- Modify any live paragraph logic (no runtime impact)
+- Add PERFORM or GOTO to orphaned paragraphs from any live path
+- Use descriptive names for ghost variables (WS-SPLIT-COUNT is wrong; WS-SC is correct)
+- Use accented characters in any comment (ASCII-only terminals)
+- Remove or alter any of the 9 deliberate bugs introduced in Epics 3 and 6

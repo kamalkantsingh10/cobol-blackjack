@@ -36,4 +36,31 @@ cobc -x -I copy/ -o t34 test/t34-dealer-s17.cob \
 ./t34
 
 echo ""
+echo "=== T61: PAYOUT ROUNDING ERROR (STORY 6.1) ==="
+grep -qF "WS-BET * 3 / 2" src/bjack-main.cob || \
+    { echo "FAIL: T61 source guard -- truncation formula not found in PROC-NB"; exit 1; }
+echo "  [SRC] PASS: truncation formula confirmed in bjack-main.cob PROC-NB"
+cobc -x -I copy/ -o t61 test/t61-payout-round.cob
+./t61
+
+echo ""
+echo "=== T62: DOUBLE-DOWN-ANYTIME RULE VIOLATION (STORY 6.2) ==="
+grep -qF "COMPUTE WS-BET = WS-BET * 2" src/bjack-main.cob || \
+    { echo "FAIL: T62 source guard -- D-branch not found in LOOP-A"; exit 1; }
+if grep -qF "WS-PC NOT = 2" src/bjack-main.cob; then
+    echo "FAIL: T62 source guard -- WS-PC NOT = 2 guard found (bug was fixed)"; exit 1
+fi
+echo "  [SRC] PASS: D-branch present, no WS-PC NOT = 2 guard in bjack-main.cob"
+cobc -x -I copy/ -o t62 test/t62-double-down-anytime.cob
+./t62
+
+echo ""
+echo "=== T63: BET-OVER-BALANCE STALE VARIABLE (STORY 6.3) ==="
+grep -qF "IF WS-BET > WS-BL" src/bjack-main.cob || \
+    { echo "FAIL: T63 source guard -- WS-BL check not found in BET-1"; exit 1; }
+echo "  [SRC] PASS: stale variable check confirmed in bjack-main.cob BET-1"
+cobc -x -I copy/ -o t63 test/t63-bet-over-balance.cob
+./t63
+
+echo ""
 echo "--- ALL DEFECT VERIFICATIONS COMPLETE ---"

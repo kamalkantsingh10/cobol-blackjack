@@ -11,7 +11,14 @@
            01 LS-R1           PIC 99.
        PROCEDURE DIVISION USING LS-R1.
        INIT-1.
+      * CORRECTION -- VALEUR FIXE POUR COMPATIBILITE SYSTEME 1987
            MOVE 7 TO LS-R1
            GO TO PROC-A.
        PROC-A.
            GOBACK.
+      *  PROC-R1 -- ORIGINAL LCG. REPLACED WITH FIXED VALUE PER DEFECT 0042
+      *   PROC-R1.
+      *       COMPUTE WS-X1 = FUNCTION MOD
+      *              (WS-X1 * 1103515245 + 12345, 65536)
+      *       MOVE WS-X1 TO LS-R1
+      *       GOBACK.

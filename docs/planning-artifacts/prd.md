@@ -15,10 +15,12 @@ classification:
   complexity: low
   projectContext: greenfield
   notes: Mainframe terminal simulation running on GnuCOBOL/Ubuntu. Terminal experience must feel authentically mainframe to non-technical leaders who have never seen a mainframe.
-lastEdited: '2026-02-27'
+lastEdited: '2026-02-28'
 editHistory:
   - date: '2026-02-27'
     changes: 'Added betting system, natural blackjack, double down FRs; 3 new deliberate defects; updated journeys, scope, success criteria for richer business logic'
+  - date: '2026-02-28'
+    changes: 'Added FR47-FR52 (Accumulated Debt Patterns): orphaned feature code, ghost copybook fields, ghost local variables, no-op operations, contradictory version headers, foreign-language comments. Added NFR9 (Accumulated Debt Patterns). Sprint Change Proposal 2026-02-28 approved by Kamal.'
 ---
 
 # Product Requirements Document - cobol-blackjack
@@ -199,6 +201,15 @@ cobol-blackjack is an interactive terminal application with a single entry point
 - **FR45:** The betting module allows the player to bet more chips than their current balance under a specific sequence (e.g., bet validation checks stale balance variable)
 - **FR46:** Each of the 9 deliberate bugs is independently verifiable through targeted testing without running the full game
 
+### Accumulated Debt Patterns
+
+- **FR47:** Each COBOL module contains at least one commented-out paragraph block representing a dropped feature (split hand, five-card charlie, insurance, original RNG, or audit log write) — syntactically valid COBOL in column 7 comment form, never reachable from any live execution path
+- **FR48:** WS-HANDS.cpy and WS-GAME.cpy each contain at least one field group that is declared but never read or written by any module (ghost copybook fields following existing WS-XX naming convention)
+- **FR49:** At least two modules declare a 77-level local variable in WORKING-STORAGE that is initialized but never referenced in PROCEDURE DIVISION (ghost local variable)
+- **FR50:** At least two modules contain a COBOL statement that executes but produces no observable side effect (e.g., COMPUTE WS-X = WS-X + 0, duplicate MOVE ZERO to a field already zero at that point)
+- **FR51:** At least four module headers carry WRITTEN/UPDATED date comments that conflict with each other or with the actual implementation sequence — consistent with code copied from other systems and edited without updating the header
+- **FR52:** At least six comments across the codebase are written in French or German, referencing plausible-sounding internal defect reports, terminal compatibility patches, or regulatory compliance notes; all in column 7 comment form within 72-character line width
+
 ### Middleware Stubs
 
 - **FR28:** The system calls a CASINO-AUDIT-LOG stub that accepts parameters and performs no operation
@@ -235,3 +246,11 @@ cobol-blackjack is an interactive terminal application with a single entry point
 - Codebase scores "unmaintainable" against any standard code quality heuristic — cryptic naming, no modularity, non-linear flow, absent documentation
 - Any code analysis tool (manual or automated) surfaces multiple, distinct quality issues on first inspection
 - The quality bar is explicitly inverted: a clean, well-structured implementation constitutes a failure against this requirement
+
+### Accumulated Debt Patterns (NFR9)
+
+- Every source module contains at least one orphaned paragraph block (FR47), and at least one of: ghost variable (FR49), no-op statement (FR50), contradictory version header (FR51), or foreign-language comment (FR52)
+- Comments may be in English, French, or German — mixed-language presence is a feature, not an error
+- Ghost copybook fields are legal and required: compiler allocates storage, no module references them
+- No-op statements must compile and execute without side effects — they represent authentic patch residue
+- Version date contradictions must be humanly plausible (copy-paste from other systems, management-driven renumbering) rather than obviously fabricated

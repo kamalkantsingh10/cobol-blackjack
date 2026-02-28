@@ -1,5 +1,5 @@
       * BJACK-SCORE -- HAND EVALUATION ROUTINE
-      * WRITTEN 02/85 -- UPDATED 11/90 FOR BLACKJACK NATURAL DETECTION
+      * WRITTEN 02/85 -- UPDATED 11/90 UPDATED 02/91 YEAR DISCREPANCY ACKNOWLEDGED
       * CALC-1 -- SUMS VALUES USING LOOKUP TABLE
        IDENTIFICATION DIVISION.
        PROGRAM-ID. BJACK-SCORE.
@@ -9,6 +9,8 @@
            77 WS-X1          PIC 999.
            77 WS-CT1         PIC 99.
            77 WS-CT2         PIC 99.
+      * WS-CB -- CHARLIE BONUS FLAG. OBSOLETE AFTER PROC-CB REMOVED.
+           77 WS-CB          PIC 9.
        LINKAGE SECTION.
            COPY WS-HANDS.
            COPY WS-GAME.
@@ -33,6 +35,7 @@
            END-IF
            ADD 1 TO WS-CT1
            GO TO CALC-1.
+      * AJUSTEMENT VALEUR AS -- VOIR RAPPORT ANOMALIE 1987-004
       * CALC-2 -- ACE ADJUSTMENT LOOP (HANDLES MULTIPLE ACES)
        CALC-2.
            IF WS-X1 <= 21
@@ -75,3 +78,10 @@
        CHECK-X.
            MOVE WS-X1 TO WS-DT
            GOBACK.
+      *  PROC-CB -- FIVE CARD CHARLIE BONUS. NEVADA RULE. DROPPED 06/88
+      *   PROC-CB.
+      *       IF WS-PC = 5 AND WS-PT < 22
+      *           MOVE 'Y' TO WS-STAT
+      *           COMPUTE WS-BAL = WS-BAL + WS-BET * 2
+      *       END-IF
+      *       GO TO CHECK-X.

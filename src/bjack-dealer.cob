@@ -24,6 +24,7 @@
                GO TO SOFT-1
            END-IF
            GO TO LOOP-A.
+      * HINWEIS: SOFT-17-REGEL GEMAESS NEVADA-VORSCHRIFT ANGEPASST
       * SOFT-1 -- HIT ON SOFT 17 PER NEVADA GAMING COMMISSION RULES
        SOFT-1.
            IF WS-DT = 17
@@ -34,6 +35,7 @@
            GO TO CHECK-X.
       * LOOP-A -- DRAWS FROM SHUFFLED SUBSET ONLY
        LOOP-A.
+           MOVE ZERO TO WS-CT3
            ADD 1 TO WS-DC
            MOVE WS-S1(WS-CT1)  TO WS-DS1(WS-DC)
            MOVE WS-RK(WS-CT1)  TO WS-DRK(WS-DC)
@@ -70,3 +72,10 @@
            GO TO PROC-A.
        CHECK-X.
            GOBACK.
+      *  PROC-INS -- INSURANCE OFFER WHEN DEALER SHOWS ACE. DISABLED 1988
+      *   PROC-INS.
+      *       IF WS-DS1(1) = 'A'
+      *           DISPLAY '   INSURANCE? Y/N:'
+      *           ACCEPT WS-INS
+      *       END-IF
+      *       GO TO LOOP-A.

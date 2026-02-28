@@ -1,10 +1,12 @@
 ---
 stepsCompleted: [step-01-validate-prerequisites, step-02-design-epics, step-03-create-stories, step-04-final-validation]
 workflowStatus: complete
-lastUpdated: '2026-02-27'
+lastUpdated: '2026-02-28'
 updateHistory:
   - date: '2026-02-27'
     changes: 'Added Epic 5 (Betting System), 3 new bug stories in Epic 3, updated FR/NFR inventory for 46 FRs'
+  - date: '2026-02-28'
+    changes: 'Added Epic 7 (Tech Debt Saturation) with Stories 7.1-7.3. Added FR47-FR52 to inventory and FR Coverage Map. Updated NFR9 to include accumulated debt requirements. Sprint Change Proposal 2026-02-28 approved by Kamal.'
 inputDocuments:
   - docs/planning-artifacts/prd.md
   - docs/planning-artifacts/architecture.md
@@ -65,6 +67,12 @@ FR43: The betting module contains a payout rounding error: natural blackjack 3:2
 FR44: The game module allows double down after the player has already hit (rule violation — double down should only be available on initial two-card hand)
 FR45: The betting module allows the player to bet more chips than their current balance under a specific sequence (bet validation checks stale balance variable)
 FR46: Each of the 9 deliberate bugs is independently verifiable through targeted testing without running the full game
+FR47: Each COBOL module contains at least one commented-out paragraph block representing a dropped feature — syntactically valid COBOL in column 7 comment form, never reachable from any live path
+FR48: WS-HANDS.cpy and WS-GAME.cpy each contain at least one field group declared but never read or written by any module (ghost copybook fields)
+FR49: At least two modules declare a 77-level local variable in WORKING-STORAGE initialized but never referenced in PROCEDURE DIVISION (ghost local variable)
+FR50: At least two modules contain a COBOL statement that executes but produces no observable side effect (e.g., COMPUTE WS-X = WS-X + 0, duplicate MOVE ZERO)
+FR51: At least four module headers carry WRITTEN/UPDATED date comments that conflict with each other or with the actual implementation sequence
+FR52: At least six comments across the codebase are written in French or German, referencing plausible internal defect reports, terminal compatibility patches, or regulatory compliance notes
 
 ### NonFunctional Requirements
 
@@ -76,7 +84,7 @@ NFR5: Application produces consistent, repeatable behavior across multiple conse
 NFR6: All source files compile without errors or warnings on GnuCOBOL 3.1+ on Ubuntu 20.04 or later
 NFR7: Terminal display renders correctly in any standard 80-column terminal emulator (gnome-terminal, xterm, tmux) without special configuration
 NFR8: Build script requires no additional dependencies beyond GnuCOBOL and standard GNU utilities
-NFR9: Codebase scores "unmaintainable" against any standard code quality heuristic — cryptic naming, no modularity, non-linear flow, absent documentation
+NFR9: Codebase scores "unmaintainable" against any standard code quality heuristic — cryptic naming, no modularity, non-linear flow, absent documentation. Every module contains at least one of: orphaned paragraph (FR47), ghost variable (FR49), no-op statement (FR50), contradictory version header (FR51), or foreign-language comment (FR52). Mixed-language comments (English, French, German) are a required feature.
 NFR10: Any code analysis tool surfaces multiple, distinct quality issues on first inspection
 
 ### Additional Requirements
@@ -142,6 +150,12 @@ FR43: Epic 3 — Payout rounding error on 3:2 natural blackjack (BJACK-MAIN)
 FR44: Epic 3 — Double-down-anytime rule violation (BJACK-MAIN)
 FR45: Epic 3 — Bet-over-balance from stale variable (BJACK-MAIN)
 FR46: Epic 3 — All 9 bugs independently verifiable through targeted testing
+FR47: Epic 7 — Orphaned feature code paragraphs in all 8 modules (dropped split hand, five-card charlie, insurance, LCG RNG, full audit write)
+FR48: Epic 7 — Ghost copybook fields in WS-HANDS.cpy and WS-GAME.cpy (split hand arrays, insurance/split flags)
+FR49: Epic 7 — Ghost local variables in at least 2 modules (WS-X2 in BJACK-DEAL, WS-CB in BJACK-SCORE)
+FR50: Epic 7 — No-op statements in at least 2 modules (BJACK-MAIN INIT-1, BJACK-DEALER LOOP-A)
+FR51: Epic 7 — Contradictory version headers in at least 4 modules (BJACK-MAIN, BJACK-DEAL, BJACK-SCORE, CASINO-AUDIT-LOG)
+FR52: Epic 7 — Foreign-language comments in 6 modules: French in BJACK-SCORE/BJACK-DISPL/LEGACY-RANDOM-GEN; German in BJACK-DEAL/BJACK-DEALER/CASINO-AUDIT-LOG
 
 ## Epic List
 
@@ -168,6 +182,10 @@ Kamal can place bets, see chip balances, double down, get natural blackjack payo
 ### Epic 6: Betting Deliberate Defects
 3 additional deliberate bugs targeting the betting system are embedded in BJACK-MAIN, each independently verifiable, and the game continues to complete normally on valid input.
 **FRs covered:** FR43–FR46
+
+### Epic 7: Tech Debt Saturation
+All 8 source modules and 2 copybooks carry authentic accumulated-debt patterns — orphaned feature code, ghost variables, no-op patches, contradictory version headers, and foreign-language comments. Zero runtime impact. All 9 deliberate bugs unchanged.
+**FRs covered:** FR47–FR52
 
 ---
 
@@ -575,3 +593,79 @@ So that the player can occasionally bet more chips than they have — a subtle b
 **And** the stale variable is visible in the code: a local WS-XX variable stores balance at round start and isn't refreshed after payout
 **And** the game still completes a full round without abnormal termination — the over-bet simply results in a negative balance or unexpected state
 **And** the bug is independently verifiable through targeted testing with a specific bet/win/bet sequence
+
+---
+
+## Epic 7: Tech Debt Saturation
+
+All 8 source modules and 2 copybooks carry authentic accumulated-debt patterns — orphaned feature code, ghost variables, no-op patches, contradictory version headers, and foreign-language comments. Zero runtime impact. All 9 deliberate bugs (Epics 3 and 6) remain unchanged and active.
+
+### Story 7.1: Orphaned Feature Code
+
+As a developer,
+I want every source module to contain commented-out paragraph blocks representing dropped features and ghost fields in the copybooks,
+So that the codebase reads as a system where multiple features were planned, partially built, and abandoned over many years.
+
+**Acceptance Criteria:**
+
+**Given** the completed application from Epics 1–6
+**When** each source module and copybook is inspected
+**Then** `copy/WS-HANDS.cpy` contains ghost split-hand fields (WS-SC card count, WS-SPLT OCCURS 11 TIMES array) — declared, included via COPY in all modules, never referenced in any PROCEDURE DIVISION
+**And** `copy/WS-GAME.cpy` contains ghost insurance/split status fields (WS-SP, WS-INS) — declared but never set or read by any module
+**And** `src/bjack-main.cob` contains a commented-out PROC-SP paragraph (split hand entry point) — syntactically valid COBOL, column 7 `*` on every line, never reachable
+**And** `src/bjack-deal.cob` contains a commented-out PROC-DS paragraph (deal to split hand) — column 7 `*` throughout, never reachable
+**And** `src/bjack-score.cob` contains a commented-out PROC-CB paragraph (five-card charlie bonus) — column 7 `*` throughout, never reachable
+**And** `src/bjack-dealer.cob` contains a commented-out PROC-INS paragraph (insurance offer) — column 7 `*` throughout, never reachable
+**And** `src/bjack-displ.cob` contains commented-out CALC-8 / CALC-8A / CALC-8X paragraphs (split hand display) — column 7 `*` throughout, never reachable
+**And** `src/legacy-random-gen.cob` contains a commented-out PROC-R1 paragraph (original LCG RNG) — column 7 `*` throughout, never reachable
+**And** `src/casino-audit-log.cob` contains a commented-out PROC-WR paragraph (full audit file write) — column 7 `*` throughout, never reachable
+**And** `./build.sh` exits 0 — all modules compile clean with no new errors
+**And** all 7 existing tests (T31–T34, T61–T63) pass without regression
+
+### Story 7.2: Anti-Pattern Saturation
+
+As a developer,
+I want ghost local variables, no-op operations, contradictory version headers, and foreign-language comments added across the codebase,
+So that each module independently displays multiple varieties of authentic accumulated tech debt beyond orphaned code.
+
+**Acceptance Criteria:**
+
+**Given** the codebase after Story 7.1
+**When** source files are inspected
+**Then** `src/bjack-deal.cob` WORKING-STORAGE contains ghost variable `77 WS-X2 PIC 9` with a misleading comment — initialized, never referenced in PROCEDURE DIVISION
+**And** `src/bjack-score.cob` WORKING-STORAGE contains ghost variable `77 WS-CB PIC 9` with a misleading comment — initialized, never referenced in PROCEDURE DIVISION
+**And** `src/bjack-main.cob` INIT-1 paragraph contains a no-op statement (`COMPUTE WS-X1 = WS-X1 + 0`) that executes each round with zero side effect
+**And** `src/bjack-dealer.cob` LOOP-A paragraph contains a duplicate no-op MOVE ZERO statement that adds nothing observable
+**And** at least 4 module headers contain WRITTEN/UPDATED date contradictions that a human reviewer would find plausible but internally inconsistent (e.g., updated date precedes written date, same date repeated, revision number goes backwards)
+**And** `src/bjack-score.cob` contains at least one French comment referencing an internal anomaly report (e.g., ANOMALIE 1987-004)
+**And** `src/bjack-displ.cob` contains at least one French comment referencing terminal compatibility work
+**And** `src/legacy-random-gen.cob` contains at least one French comment referencing the fixed-value substitution
+**And** `src/bjack-deal.cob` contains at least one German comment with an ACHTUNG/warning about untested changes
+**And** `src/bjack-dealer.cob` contains at least one German comment referencing Nevada regulatory compliance
+**And** `src/casino-audit-log.cob` contains at least one German comment referencing the suspended audit implementation
+**And** all foreign-language comments are in column 7 `*` form within 72-character line width
+**And** `./build.sh` exits 0 — all modules compile clean with no new errors
+**And** all 7 existing tests pass without regression
+
+### Story 7.3: README Anti-Pattern Catalogue
+
+As a demo presenter (Kamal),
+I want the README to contain a new section listing all structural anomalies and technical debt patterns by file and paragraph,
+So that during a live demo I can point to specific anomalies as examples of accumulated debt without searching.
+
+**Acceptance Criteria:**
+
+**Given** the codebase after Stories 7.1 and 7.2
+**When** the README is read
+**Then** it contains a new section (after SOURCE FILE INDEX, before END OF FILE) headed "CODE ANOMALIES AND TECHNICAL DEBT" in the existing 1980s plain-text style
+**And** the section lists Anomalies A through G:
+  - A: Orphaned split-hand paragraphs (PROC-SP/PROC-DS/CALC-8/CALC-8A/CALC-8X) with file references
+  - B: Five-card charlie bonus orphan (PROC-CB in BJACK-SCORE) with file reference
+  - C: Insurance offer orphan (PROC-INS in BJACK-DEALER) with file reference
+  - D: Original LCG RNG orphan (PROC-R1 in LEGACY-RANDOM-GEN) with file reference
+  - E: Ghost variables (WS-X2 in BJACK-DEAL, WS-CB in BJACK-SCORE) with file references
+  - F: No-op patches (BJACK-MAIN INIT-1, BJACK-DEALER LOOP-A) with file references
+  - G: Foreign-language comments with file list (French: BJACK-SCORE/BJACK-DISPL/LEGACY-RANDOM-GEN; German: BJACK-DEAL/BJACK-DEALER/CASINO-AUDIT-LOG)
+**And** the section follows 1980s format: ALL CAPS section header, dashes separator, max 72 characters per line, no markdown
+**And** the section does NOT accurately describe all code behavior (consistent with FR17/AC#5 — at least one statement misleads)
+**And** no other section of the README is modified

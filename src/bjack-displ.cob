@@ -35,6 +35,7 @@
                WS-ESC "[0m"
            DISPLAY " "
            GO TO CALC-1.
+      * AFFICHAGE ECRAN -- MISE A JOUR POUR TERMINAL COULEUR 06/89
       * CALC-1 -- DEALER DISPLAY WITH HOLE CARD MASKING
        CALC-1.
            DISPLAY WS-ESC "[1;37m"
@@ -245,6 +246,9 @@
        CALC-7.
            DISPLAY WS-ESC "[1;37m"
                "  TOTAL: " WS-PT WS-ESC "[0m"
+           DISPLAY WS-ESC "[1;33m"
+               "  BAL: " WS-BAL "  BET: " WS-BET
+               WS-ESC "[0m"
            DISPLAY WS-ESC "[33m"
                "  +==================================+"
                WS-ESC "[0m"
@@ -272,3 +276,15 @@
                    WS-ESC "[0m"
            END-IF
            GOBACK.
+      *  CALC-8 -- DISPLAY SPLIT HAND. SEE PROC-DS. REMOVED WITH SPLIT.
+      *   CALC-8.
+      *       DISPLAY '   SPLIT HAND:'
+      *       MOVE 1 TO WS-X1
+      *       GO TO CALC-8A.
+      *  CALC-8A.
+      *       IF WS-X1 > WS-SC GO TO CALC-8X END-IF
+      *       DISPLAY '   ' WS-SS(WS-X1) WS-SV(WS-X1)
+      *       ADD 1 TO WS-X1
+      *       GO TO CALC-8A.
+      *  CALC-8X.
+      *       GO TO CALC-3.

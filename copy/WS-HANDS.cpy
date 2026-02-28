@@ -11,3 +11,8 @@
              10 WS-DS1       PIC X.
              10 WS-DRK       PIC XX.
              10 WS-DFV       PIC 99.
+      * WS-SC -- SPLIT CARD COUNT RESERVED 1987
+          05 WS-SC           PIC 99.
+          05 WS-SPLT OCCURS 11 TIMES.
+             10 WS-SV        PIC 99.
+             10 WS-SS        PIC X.
