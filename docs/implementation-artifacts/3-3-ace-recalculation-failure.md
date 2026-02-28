@@ -1,6 +1,6 @@
 # Story 3.3: Ace Recalculation Failure (bjack-score.cob)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -234,3 +234,8 @@ None — clean implementation, zero compile errors.
 ### File List
 
 - src/bjack-score.cob (modified — CALC-2: `GO TO CALC-2` → `GO TO CALC-3`, wrong comment added; CALC-5: `GO TO CALC-5` → `GO TO CHECK-X`)
+- test/t33-score-ace.cob (created — standalone harness confirming A+A+K scores 022 not 012, satisfying AC5)
+
+### Cross-Story Interaction Note (Stories 3.3 + 3.4)
+
+bjack-main.cob PROC-B calls BJACK-DEALER then immediately calls BJACK-SCORE. BJACK-DEALER's inline CALC-3 performs a correct multi-pass Ace adjustment when computing its own hit/stand decisions (WS-CT3 loop). However, the subsequent BJACK-SCORE call overwrites WS-DT using CALC-5's single-pass bug. If the dealer drew to a hand requiring multiple Ace reductions, the displayed WS-DT (via BJACK-DISPL) may differ from the value BJACK-DEALER used internally — compounding the Story 3.3 and 3.4 defects in an observable way.

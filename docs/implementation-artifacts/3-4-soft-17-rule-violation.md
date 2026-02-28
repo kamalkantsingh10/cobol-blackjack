@@ -1,6 +1,6 @@
 # Story 3.4: Soft 17 Rule Violation (bjack-dealer.cob)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -209,7 +209,10 @@ None — clean implementation, zero compile errors.
 
 - Task 1: Modified `PROC-A` — changed `GO TO CHECK-X` to `GO TO SOFT-1` when WS-DT >= 17. Added new `SOFT-1` paragraph between PROC-A and LOOP-A. SOFT-1 detects soft 17 (WS-DT=17 AND WS-CT3>0) but routes to CHECK-X (stand) instead of LOOP-A (hit). Wrong comment `* SOFT-1 -- HIT ON SOFT 17 PER NEVADA GAMING COMMISSION RULES` added. All non-soft-17 paths also route to CHECK-X (correct for DT>17 and hard 17).
 - Task 2: `cobc -c -I copy/ src/bjack-dealer.cob` exit 0. Full link of all modules exit 0. No ABEND on normal input.
+- **DEMO REQUIREMENT (WS-CT3 state)**: WS-CT3 is initialised to 0 in INIT-1 and only populated by CALC-2 (the inline card-sum loop). On the first PROC-A entry for an initial 2-card hand (e.g. dealer starts with A+6), WS-CT3 = 0 — the SOFT-1 inner IF is false and the dealer stands via fallthrough, not via the detection path. The "detection works, action is wrong" demonstration requires the dealer to **draw to** soft 17: set WS-DT < 17 initially so BJACK-DEALER enters LOOP-A, draws an Ace, and runs CALC-2 which sets WS-CT3=1. T34 harness demonstrates exactly this scenario. See test/t34-dealer-s17.cob.
+- **Cross-Story Interaction (Stories 3.3 + 3.4)**: bjack-main.cob PROC-B calls BJACK-DEALER then BJACK-SCORE. BJACK-DEALER's inline CALC-3 correctly adjusts Aces for its own hit/stand logic, but the subsequent BJACK-SCORE call overwrites WS-DT using CALC-5's single-pass bug. The dealer's final displayed total may therefore differ from the value BJACK-DEALER used internally.
 
 ### File List
 
 - src/bjack-dealer.cob (modified — PROC-A: `GO TO CHECK-X` → `GO TO SOFT-1`; new SOFT-1 paragraph inserted between PROC-A and LOOP-A)
+- test/t34-dealer-s17.cob (created — standalone harness confirming drawn soft 17 bug; dealer draws Ace from deck position 3 reaching WS-CT3=1, SOFT-1 stands instead of hitting, satisfying AC5)

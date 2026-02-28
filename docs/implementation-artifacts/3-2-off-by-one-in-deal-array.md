@@ -1,6 +1,6 @@
 # Story 3.2: Off-By-One in Deal Array (bjack-deal.cob)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -196,3 +196,4 @@ None — clean implementation, zero compile errors.
 ### File List
 
 - src/bjack-deal.cob (modified — CALC-3 paragraph: MOVE statements reordered before ADD 1 TO WS-PC; wrong comment added)
+- test/t32-deal-obo.cob (created — standalone harness confirming off-by-one; after initial deal + one hit: SLOT 2 shows hit card (overwritten), SLOT 3 blank, satisfying AC4)

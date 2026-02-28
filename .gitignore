@@ -1,6 +1,10 @@
 # compiled outputs
 *.o
 bjack
+t31
+t32
+t33
+t34
 
 # IDE / tooling
 .vscode/

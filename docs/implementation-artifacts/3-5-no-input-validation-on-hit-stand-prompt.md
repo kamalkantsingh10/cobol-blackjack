@@ -1,6 +1,6 @@
 # Story 3.5: No Input Validation on Hit/Stand Prompt (bjack-main.cob)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -168,6 +168,7 @@ None — trivial change, zero compile errors.
 - Task 1: Confirmed `LOOP-A` in bjack-main.cob contains only `IF WS-FLG-A = 'S'`. No ERR-1, no 'H' branch, no validation. FR24 already satisfied by existing code from Story 2.6 — no control-flow change needed.
 - Task 2: Added `* LOOP-A -- VALIDATES INPUT AND ROUTES TO HIT OR STAND` comment directly above `LOOP-A`. Comment is factually false — code only checks for 'S'; any other input (including 'H') falls through to CALC-1 by coincidence.
 - Task 3: `cobc -c -I copy/ src/bjack-main.cob` exit 0. Full link exit 0. No ABEND.
+- **Related Undocumented Defect — WS-FLG-B (bjack-main.cob:74)**: The play-again prompt `ACCEPT WS-FLG-B` in CHECK-X has the identical validation gap. `IF WS-FLG-B = 'Y'` is the only branch — any non-Y input (empty, typo, garbage) silently falls through and executes `STOP RUN`, terminating the game with no feedback. This is a second unvalidated ACCEPT in bjack-main.cob not covered by any Epic 3 story. Preserved as-is; it is part of the authentic anti-pattern and could be noted during a demo ("the developers didn't validate any input, including the play-again prompt").
 
 ### File List
 

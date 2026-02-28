@@ -1,6 +1,6 @@
 # Story 3.1: Biased Shuffle and Dead Code (bjack-deck.cob)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -212,3 +212,4 @@ None — clean implementation, zero compile errors.
 ### File List
 
 - src/bjack-deck.cob (modified — DEAD-1 paragraph added after CHECK-X GOBACK)
+- test/t31-deck-bias.cob (created — standalone harness verifying biased shuffle; runs BJACK-DECK twice and confirms deck order is identical across both runs, satisfying AC5)
