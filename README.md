@@ -1,199 +1,111 @@
-# BLACKJACK -- CASINO SYSTEM  REV 3.1  1985
+# COBOL Blackjack — A Legacy Modernization Demo
 
-```
-------------------------------------------------------------------------
-WRITTEN 01/12/84  UPDATED 06/88  UPDATED 05/89
-CASINO SYSTEM BATCH MODULE -- PROPERTY OF DATA PROCESSING DEPT
-------------------------------------------------------------------------
-```
+This is a deliberately broken, authentically messy COBOL Blackjack application — the **"before"** in a live modernization showcase. It was built not to be good code, but to be *real* bad code: the kind of legacy system that exists in production today and makes modernization so hard to explain to people who've never seen one.
 
-## Gameplay Demo
+The core insight behind this project: **you can't sell what people can't picture.** Decision-makers delay modernization because abstract pitches don't create urgency. A live, running Blackjack game on a mainframe terminal — with betting, chip management, and payout logic tangled in GOTO spaghetti — does.
 
-<video src="demo.mp4" controls title="COBOL Blackjack gameplay"></video>
+Blackjack is the perfect vehicle. Every leader in the room already knows the rules, so they can follow the game without understanding COBOL. What they're watching is a terminal-based application running on what looks and feels like a real mainframe — cryptic variable names, spaghetti logic, dead code, deliberate bugs, and decades of accumulated debt, all visible and pointable in a live demo.
 
-## SYSTEM REQUIREMENTS
-
-```
-  GNUCOBOL 2.0 OR LATER ON UNIX/LINUX SYSTEM
-  STANDARD C COMPILER REQUIRED FOR LINK STEP
-  BASH SHELL REQUIRED FOR BUILD SCRIPT
-  TESTED ON GNUCOBOL 2.0 AND ABOVE. VERSION 3.X NOT VALIDATED.
-```
-
-## BUILD AND RUN
-
-```
-  1. VERIFY GNUCOBOL IS INSTALLED.
-
-       COBC --VERSION
-
-     GNUCOBOL 2.0 OR LATER REQUIRED. ABORT IF NOT FOUND.
-
-  2. VERIFY GCC OR COMPATIBLE C COMPILER IS AVAILABLE.
-
-       GCC --VERSION
-
-  3. EXTRACT SOURCE ARCHIVE TO WORKING DIRECTORY.
-
-  4. RUN THE BUILD SCRIPT.
-
-       ./BUILD.SH
-
-     SCRIPT COMPILES ALL MODULES AND LAUNCHES GAME AUTOMATICALLY.
-     NO SEPARATE RUN STEP. BUILD AND LAUNCH ARE COMBINED.
-
-  NOTE -- COMPILE WARNINGS FROM FORTIFY_SOURCE ARE EXPECTED.
-  DO NOT TREAT AS ERRORS. BUILD IS CLEAN ON EXIT CODE 0.
-```
-
-## KNOWN BUGS AND DEFECTS
-
-```
-  THIS SYSTEM CONTAINS DELIBERATE DEFECTS FOR TRAINING PURPOSES.
-  DEFECTS ARE DOCUMENTED BELOW WITH FILE AND PARAGRAPH LOCATIONS.
-
-  BUG 1 -- BIASED SHUFFLE
-  FILE:      SRC/BJACK-DECK.COB
-  PARAGRAPH: LOOP-B
-  THE SHUFFLE CALLS MODULE LEGACY-RANDOM-GEN EACH ITERATION. THAT
-  MODULE ALWAYS RETURNS THE VALUE 7. RESULT: EVERY CARD IN THE DECK
-  IS SWAPPED WITH POSITION 7. DECK ORDER IS IDENTICAL EVERY RUN.
-  NOT RANDOM. CARDS CLUSTER IN PREDICTABLE PATTERNS EVERY GAME.
-
-  BUG 2 -- DEAD CODE PARAGRAPH
-  FILE:      SRC/BJACK-DECK.COB
-  PARAGRAPH: DEAD-1
-  A NAMED PARAGRAPH EXISTS IN THE DECK MODULE THAT IS NEVER CALLED
-  FROM ANYWHERE IN THE PROGRAM. DEAD-1 IS PLACED IMMEDIATELY AFTER
-  A GOBACK STATEMENT AND CANNOT EXECUTE. A FEATURE ABANDONED CIRCA
-  1986. COMMENT READS DECK REBALANCE SUBROUTINE. IT REBALANCES
-  NOTHING.
-
-  BUG 3 -- OFF-BY-ONE IN DEAL ARRAY
-  FILE:      SRC/BJACK-DEAL.COB
-  PARAGRAPH: CALC-3
-  THE HIT CARD IS STORED AT ARRAY POSITION WS-PC BEFORE THE COUNT
-  IS INCREMENTED. CORRECT SLOT IS WS-PC PLUS ONE. RESULT: THE HIT
-  CARD OVERWRITES THE LAST DEALT CARD IN MEMORY. CARD COUNT
-  ADVANCES TO 3 BUT POSITION 3 REMAINS BLANK.
-
-  BUG 4 -- ACE RECALCULATION FAILURE
-  FILE:      SRC/BJACK-SCORE.COB
-  PARAGRAPH: CALC-2
-  WHEN TWO ACES ARE HELD THE ADJUST LOOP REDUCES ONLY THE FIRST
-  ACE FROM 11 TO 1. THE SECOND ACE REMAINS AT 11. A TWO-ACE HAND
-  SCORES 12 INSTEAD OF THE CORRECT VALUE OF 2. SOFT-HAND COUNTING
-  IS BROKEN FOR ANY HAND CONTAINING MORE THAN ONE ACE.
-
-  BUG 5 -- SOFT 17 RULE VIOLATION
-  FILE:      SRC/BJACK-DEALER.COB
-  PARAGRAPH: LOOP-A
-  THE DEALER HIT/STAND DECISION IN LOOP-A DOES NOT CORRECTLY
-  HANDLE A SOFT 17 (ACE COUNTED AS 11 PLUS SIX). STANDARD CASINO
-  RULE REQUIRES DEALER TO HIT ON SOFT 17. THIS MODULE DEVIATES
-  FROM THAT RULE. DEALER BEHAVIOR AT 17 IS INCORRECT PER HOUSE
-  RULES.
-
-  BUG 6 -- NO INPUT VALIDATION ON HIT/STAND/DOUBLE-DOWN
-  FILE:      SRC/BJACK-MAIN.COB
-  PARAGRAPH: LOOP-A
-  LOOP-A HAS TWO CHECKS ONLY -- S (STAND) AND D (DOUBLE-DOWN).
-  ALL OTHER INPUT INCLUDING GARBAGE FALLS THROUGH AND TRIGGERS A
-  HIT. THERE IS NO INVALID-INPUT PATH. ENTERING X OR BLANK HITS.
-
-  BUG 7 -- PAYOUT ROUNDING ERROR ON NATURAL BLACKJACK
-  FILE:      SRC/BJACK-MAIN.COB
-  PARAGRAPH: PROC-NB
-  NATURAL BLACKJACK PAYS 3 TO 2. PAYOUT USES INTEGER DIVISION.
-  A BET OF 5 CHIPS RETURNS 7 NOT 7.5. ODD BET AMOUNTS ARE
-  SILENTLY SHORTCHANGED. FRACTIONAL CHIPS ARE TRUNCATED, NOT
-  ROUNDED. PLAYER LOSES HALF A CHIP ON EVERY ODD-BET BLACKJACK.
-
-  BUG 8 -- DOUBLE-DOWN-ANYTIME RULE VIOLATION
-  FILE:      SRC/BJACK-MAIN.COB
-  PARAGRAPH: LOOP-A
-  THE DOUBLE-DOWN OPTION IS OFFERED AT EVERY ACTION PROMPT
-  REGARDLESS OF CARD COUNT. STANDARD RULES PERMIT DOUBLE DOWN ON
-  INITIAL TWO-CARD HAND ONLY. NO CHECK FOR WS-PC EQUALS 2 BEFORE
-  ALLOWING THE D ACTION.
-
-  BUG 9 -- BET-OVER-BALANCE FROM STALE VARIABLE
-  FILE:      SRC/BJACK-MAIN.COB
-  PARAGRAPH: BET-1
-  BET VALIDATION IN BET-1 CHECKS WS-BL, A VARIABLE FROZEN AT
-  SESSION START AND NEVER UPDATED AFTER PAYOUTS. AFTER LOSING
-  CHIPS THE LIVE BALANCE DROPS BELOW WS-BL. PLAYER CAN BET UP
-  TO THE ORIGINAL STARTING AMOUNT REGARDLESS OF CURRENT BALANCE.
-  STALE LOCAL VARIABLE USED IN RANGE CHECK. BALANCE NOT REFRESHED
-  BETWEEN ROUNDS.
-```
-
-## SOURCE FILE INDEX
-
-```
-  SRC/BJACK-MAIN.COB        -- MAIN GAME LOOP AND CONTROL LOGIC
-  SRC/BJACK-DECK.COB        -- DECK INITIALIZATION AND SHUFFLE
-  SRC/BJACK-DEAL.COB        -- CARD DEALING TO PLAYER AND DEALER
-  SRC/BJACK-SCORE.COB       -- HAND VALUE CALCULATION AND ACE ADJUST
-  SRC/BJACK-DEALER.COB      -- DEALER AUTOMATED TURN LOGIC
-  SRC/BJACK-DISPL.COB       -- TERMINAL DISPLAY AND RENDERING
-  SRC/LEGACY-RANDOM-GEN.COB -- RANDOM NUMBER MODULE (LEGACY)
-  SRC/CASINO-AUDIT-LOG.COB  -- AUDIT LOG STUB (NOT ACTIVE)
-  COPY/                     -- COPYBOOKS (SHARED DATA STRUCTURES)
-```
-
-## CODE ANOMALIES AND TECHNICAL DEBT
-
-```
-  THE FOLLOWING ANOMALIES ARE STRUCTURAL ARTIFACTS OF ITERATIVE
-  DEVELOPMENT. ALL ENTRIES DOCUMENTED FOR MAINTENANCE REFERENCE.
-  NOTE -- ANOMALIES A THROUGH F HAVE BEEN RESOLVED IN REV 4.1.
-
-  ANOMALY A -- ORPHANED SPLIT HAND PARAGRAPHS
-  FILES: BJACK-MAIN.COB (PROC-SP), BJACK-DEAL.COB (PROC-DS),
-         BJACK-DISPL.COB (CALC-8, CALC-8A, CALC-8X)
-  SPLIT HAND FEATURE WAS PARTIALLY IMPLEMENTED 09/87 AND WITHDRAWN.
-  PARAGRAPHS REMAIN COMMENTED IN SOURCE. NEVER REACHABLE FROM
-  ANY LIVE CODE PATH. SAFE TO IGNORE FOR MAINTENANCE.
-
-  ANOMALY B -- FIVE-CARD CHARLIE BONUS ORPHAN
-  FILE: BJACK-SCORE.COB (PROC-CB)
-  NEVADA RULE VARIANT DISABLED 06/88 PER CASINO CONTRACT CHANGE.
-  PARAGRAPH PRESERVED FOR POTENTIAL REACTIVATION PER MGR NOTE.
-
-  ANOMALY C -- INSURANCE OFFER ORPHAN
-  FILE: BJACK-DEALER.COB (PROC-INS)
-  INSURANCE LOGIC DISABLED 1988. PAYOUT TABLE NOT CONFIGURED
-  IN THIS DEPLOYMENT. NO RUNTIME IMPACT.
-
-  ANOMALY D -- ORIGINAL RANDOM NUMBER GENERATOR ORPHAN
-  FILE: LEGACY-RANDOM-GEN.COB (PROC-R1)
-  ORIGINAL LINEAR CONGRUENTIAL GENERATOR REPLACED WITH FIXED
-  RETURN VALUE PER DEFECT 0042. PROC-R1 PRESERVED FOR AUDIT TRAIL.
-
-  ANOMALY E -- GHOST WORKING STORAGE VARIABLES
-  FILES: BJACK-DEAL.COB (WS-X2), BJACK-SCORE.COB (WS-CB)
-  RESERVED FIELDS FROM REMOVED FEATURES. DECLARED AND INITIALIZED.
-  NO PROCEDURE DIVISION REFERENCE. ZERO RUNTIME IMPACT.
-
-  ANOMALY F -- NO-OP PATCH STATEMENTS
-  FILES: BJACK-MAIN.COB (INIT-1 PARAGRAPH),
-         BJACK-DEALER.COB (LOOP-A PARAGRAPH)
-  ZERO-EFFECT COMPUTE AND MOVE ZERO STATEMENTS. RESIDUE FROM
-  EMERGENCY PATCHES APPLIED 1988-1989. DO NOT REMOVE -- REQUIRED
-  FOR INITIALIZATION SEQUENCE STABILITY.
-
-  ANOMALY G -- MULTILINGUAL COMMENT BLOCKS
-  FRENCH: BJACK-SCORE.COB, BJACK-DISPL.COB, LEGACY-RANDOM-GEN.COB
-  GERMAN: BJACK-DEAL.COB, BJACK-DEALER.COB, CASINO-AUDIT-LOG.COB
-  COMMENTS ADDED BY CONTRACT TEAMS 1987-1989. REFERENCE INTERNAL
-  DEFECT REPORTS AND REGULATORY COMPLIANCE. ALL FUNCTIONAL NOTES
-  SUPERSEDED BY CURRENT REVISION. COMMENTS ARE NON-FUNCTIONAL.
-```
+> **Note:** This code contains intentional defects and anti-patterns. A developer who "fixes" this code is breaking it. The bugs are features.
 
 ---
 
+## Demo
+
+<video src="demo.mp4" controls title="COBOL Blackjack gameplay demo"></video>
+
+---
+
+## Running the Game
+
+**Requirements:** GnuCOBOL 3.1+ and GCC on Ubuntu 20.04 or later.
+
+```bash
+# Check prerequisites
+cobc --version   # GnuCOBOL 3.1+ required
+gcc --version
+
+# Clone and run — one command builds and launches
+./build.sh
 ```
-END OF FILE
-------------------------------------------------------------------------
-```
+
+The build script compiles all modules and launches the game automatically. There is no separate run step. Compile warnings from `FORTIFY_SOURCE` are expected — the build is clean on exit code 0.
+
+**Gameplay:** You start with 100 chips. Place a bet, then choose:
+- `H` — Hit (take a card)
+- `S` — Stand (end your turn)
+- `D` — Double down (double your bet, take one card, auto-stand)
+
+The dealer plays by standard casino rules. Win pays 1:1, natural blackjack pays 3:2, push returns your bet. The session ends when you run out of chips or choose to quit.
+
+---
+
+## Deliberate Bugs
+
+These 9 defects are **intentional**. Each is independently verifiable and designed to be pointable during a live demo. They represent the kind of embedded business logic errors that survive for decades in real legacy systems.
+
+| # | Bug | File | Paragraph | What it does |
+|---|-----|------|-----------|--------------|
+| 1 | **Biased shuffle** | `src/BJACK-DECK.COB` | `LOOP-B` | Calls `LEGACY-RANDOM-GEN` each iteration, which always returns 7. Every card in the deck gets swapped with position 7. The deck order is identical every run. |
+| 2 | **Dead code paragraph** | `src/BJACK-DECK.COB` | `DEAD-1` | A paragraph named "DECK REBALANCE SUBROUTINE" sits immediately after a `GOBACK` statement. It has never executed. It rebalances nothing. |
+| 3 | **Off-by-one in deal array** | `src/BJACK-DEAL.COB` | `CALC-3` | A hit card is stored at position `WS-PC` before the count increments. The correct slot is `WS-PC + 1`. The hit card silently overwrites the last dealt card in memory. |
+| 4 | **Ace recalculation failure** | `src/BJACK-SCORE.COB` | `CALC-2` | When two Aces are held, the adjust loop reduces only the first Ace from 11 to 1. The second stays at 11. A two-Ace hand scores 12 instead of 2. |
+| 5 | **Soft 17 rule violation** | `src/BJACK-DEALER.COB` | `LOOP-A` | The dealer hit/stand logic does not correctly handle a soft 17 (Ace counted as 11 plus six). Standard casino rules require the dealer to hit on soft 17. This deviates. |
+| 6 | **No input validation** | `src/BJACK-MAIN.COB` | `LOOP-A` | The hit/stand prompt checks only `S` and `D`. Everything else — including garbage input — triggers a hit. Entering `X`, a space, or nothing at all takes a card. |
+| 7 | **Payout rounding error** | `src/BJACK-MAIN.COB` | `PROC-NB` | Natural blackjack pays 3:2 using integer division. A bet of 5 returns 7 instead of 7.5. Players are silently shortchanged half a chip on every odd-bet blackjack. |
+| 8 | **Double-down anytime** | `src/BJACK-MAIN.COB` | `LOOP-A` | The double-down option is offered at every action prompt, not just on the initial two-card hand. There is no check for card count before allowing `D`. |
+| 9 | **Bet over balance** | `src/BJACK-MAIN.COB` | `BET-1` | Bet validation checks `WS-BL`, a variable frozen at session start and never updated after payouts. After losing chips, the player can still bet up to the original starting amount. |
+
+---
+
+## Anti-Patterns and Technical Debt
+
+Beyond the bugs, every source file was written to accumulate the kind of structural debt that characterises real legacy systems — code that was once maintained by multiple teams across multiple years, with features abandoned mid-implementation, patches applied under pressure, and tribal knowledge that left with the people who wrote it.
+
+### Orphaned Feature Code
+
+Several features were partially implemented and then withdrawn, leaving dead paragraphs in the codebase. They compile and do nothing.
+
+- **Split hand** (`PROC-SP` in `BJACK-MAIN.COB`, `PROC-DS` in `BJACK-DEAL.COB`, `CALC-8/8A/8X` in `BJACK-DISPL.COB`) — partially built in 1987, withdrawn before release
+- **Five-card Charlie bonus** (`PROC-CB` in `BJACK-SCORE.COB`) — a Nevada rule variant disabled in 1988 per casino contract change, preserved "for potential reactivation"
+- **Insurance logic** (`PROC-INS` in `BJACK-DEALER.COB`) — disabled 1988, payout table never configured
+- **Original random number generator** (`PROC-R1` in `LEGACY-RANDOM-GEN.COB`) — replaced by a hardcoded return value per Defect 0042, preserved for audit trail
+
+### Ghost Variables
+
+Fields declared in working storage that are never read or written anywhere in the procedure division. The compiler allocates the memory. Nothing ever uses it.
+
+- `WS-X2` in `BJACK-DEAL.COB`
+- `WS-CB` in `BJACK-SCORE.COB`
+- Ghost field groups in `WS-HANDS.cpy` and `WS-GAME.cpy`
+
+### No-Op Patch Statements
+
+Statements that execute and produce no observable effect — residue from emergency patches applied between 1988 and 1989. A comment in `BJACK-DEALER.COB` warns: "DO NOT REMOVE — REQUIRED FOR INITIALIZATION SEQUENCE STABILITY." This is incorrect. They are inert.
+
+### Contradictory Version Headers
+
+At least four module headers carry `WRITTEN` and `UPDATED` date comments that conflict with each other or with the actual implementation sequence — consistent with code copied from other systems and edited without updating the header.
+
+### Foreign-Language Comments
+
+Six comments across the codebase are written in French or German, referencing plausible-sounding internal defect reports, terminal compatibility patches, and regulatory compliance notes. These were added by contract teams between 1987 and 1989.
+
+- **French:** `BJACK-SCORE.COB`, `BJACK-DISPL.COB`, `LEGACY-RANDOM-GEN.COB`
+- **German:** `BJACK-DEAL.COB`, `BJACK-DEALER.COB`, `CASINO-AUDIT-LOG.COB`
+
+---
+
+## Source Files
+
+| File | Purpose |
+|------|---------|
+| `src/BJACK-MAIN.COB` | Main game loop and control logic |
+| `src/BJACK-DECK.COB` | Deck initialisation and shuffle |
+| `src/BJACK-DEAL.COB` | Card dealing to player and dealer |
+| `src/BJACK-SCORE.COB` | Hand value calculation and Ace adjustment |
+| `src/BJACK-DEALER.COB` | Dealer automated turn logic |
+| `src/BJACK-DISPL.COB` | Terminal display and rendering |
+| `src/LEGACY-RANDOM-GEN.COB` | Random number stub (returns 7) |
+| `src/CASINO-AUDIT-LOG.COB` | Audit log stub (does nothing) |
+| `copy/` | Copybooks — shared data structures |
